@@ -72,8 +72,7 @@
 
 ```bash
 # Clone the repository
-git clone [[https://github.com/your-repo/whos-the-super-hot-cpu.git](https://github.com/your-repo/whos-the-super-hot-cpu.git)
-](https://github.com/yeochaeeon/2025-Fall_Super-Hot-CPU.git)
+git clone https://github.com/yeochaeeon/2025-Fall_Super-Hot-CPU.git
 # Install dependencies
 npm install
 
