@@ -82,3 +82,6 @@ mysql -u root -p < ./database/init.sql
 
 # Start Server
 npm start
+
+
+테스트 태란이가 씀 
