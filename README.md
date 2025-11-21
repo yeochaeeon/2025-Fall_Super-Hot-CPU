@@ -84,4 +84,6 @@ mysql -u root -p < ./database/init.sql
 npm start
 
 
-테스트 태란이가 씀 
+이건 그냥 커밋 후 푸시 : 테스트 태란이가 씀 
+
+이건 pr로 날린 푸시 
