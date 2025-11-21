@@ -73,6 +73,7 @@
 ```bash
 # Clone the repository
 git clone https://github.com/yeochaeeon/2025-Fall_Super-Hot-CPU.git
+
 # Install dependencies
 npm install
 
