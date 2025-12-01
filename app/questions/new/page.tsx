@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MessageSquare, Send } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,13 +99,13 @@ export default function QuestionNewPage() {
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/questions")}
-                className="flex-1 border-primary/30 hover:bg-muted"
+                className="flex-1 border-primary/30 hover:bg-muted hover:text-primary"
               >
                 취소
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+                className="flex-1 bg-primary hover:bg-primary/90 text-black shadow-neon"
               >
                 <Send className="h-4 w-4 mr-2" />
                 등록하기
@@ -109,10 +115,13 @@ export default function QuestionNewPage() {
         </Card>
 
         <Card className="p-4 bg-muted/30 border-primary/10">
-          <h3 className="font-semibold mb-2 text-sm">📌 고민 게시판 이용 안내</h3>
+          <h3 className="font-semibold mb-2 text-sm">
+            📌 고민 게시판 이용 안내
+          </h3>
           <ul className="text-xs text-muted-foreground space-y-1">
             <li>
-              • <strong>Developer & Hot Developer</strong>: 고민 등록만 가능합니다
+              • <strong>Developer & Hot Developer</strong>: 고민 등록만
+              가능합니다
             </li>
             <li>
               • <strong>Optimizer</strong>: 답변 작성만 가능합니다
@@ -127,5 +136,3 @@ export default function QuestionNewPage() {
     </Layout>
   );
 }
-
-

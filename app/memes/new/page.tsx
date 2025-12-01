@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Laugh, Send, Upload, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +42,12 @@ export default function MemeNewPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     // TODO: Backend integration
-    console.log({ title, content, devGroup, image: imagePreview ? "uploaded" : null });
+    console.log({
+      title,
+      content,
+      devGroup,
+      image: imagePreview ? "uploaded" : null,
+    });
     router.push("/memes");
   };
 
@@ -102,9 +113,7 @@ export default function MemeNewPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-foreground">
-                이미지 (선택)
-              </Label>
+              <Label className="text-foreground">이미지 (선택)</Label>
               {!imagePreview ? (
                 <div className="relative">
                   <Input
@@ -153,14 +162,14 @@ export default function MemeNewPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/memes")}
-                className="flex-1 border-primary/30 hover:bg-muted"
+                onClick={() => router.push("/questions")}
+                className="flex-1 border-primary/30 hover:bg-muted hover:text-primary"
               >
                 취소
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+                className="flex-1 bg-primary hover:bg-primary/90 text-black shadow-neon"
               >
                 <Send className="h-4 w-4 mr-2" />
                 등록하기
@@ -182,4 +191,3 @@ export default function MemeNewPage() {
     </Layout>
   );
 }
-

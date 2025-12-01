@@ -62,7 +62,8 @@ export default function QuestionDetailPage() {
     },
   ]);
 
-  const canAnswer = currentUser.role === "optimizer" || currentUser.role === "root";
+  const canAnswer =
+    currentUser.role === "optimizer" || currentUser.role === "root";
   const isAuthor = currentUser.id === question.authorId;
 
   const handleSubmitAnswer = () => {
@@ -96,8 +97,10 @@ export default function QuestionDetailPage() {
   const handleAccept = (answerId: number, accept: boolean) => {
     setAnswers(
       answers.map((answer) =>
-        answer.id === answerId ? { ...answer, isAccepted: accept } : { ...answer, isAccepted: false },
-      ),
+        answer.id === answerId
+          ? { ...answer, isAccepted: accept }
+          : { ...answer, isAccepted: false }
+      )
     );
     toast({
       title: accept ? "답변을 채택했습니다" : "채택을 취소했습니다",
@@ -119,19 +122,14 @@ export default function QuestionDetailPage() {
 
         <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-start gap-3 flex-1">
-              <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
-                {question.author.slice(0, 2).toUpperCase()}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <p className="text-lg font-bold">{question.author}</p>
+                <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
+                  {question.role}
+                </span>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <p className="font-medium">{question.author}</p>
-                  <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
-                    {question.role}
-                  </span>
-                </div>
-                <BadgeDisplay badges={question.badges} maxDisplay={5} />
-              </div>
+              <BadgeDisplay badges={question.badges} maxDisplay={5} />
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
@@ -140,11 +138,15 @@ export default function QuestionDetailPage() {
           </div>
 
           <h1 className="text-2xl font-bold mb-4">{question.title}</h1>
-          <p className="text-muted-foreground whitespace-pre-wrap mb-4">{question.content}</p>
+          <p className="text-muted-foreground whitespace-pre-wrap mb-4">
+            {question.content}
+          </p>
 
           <div className="flex items-center gap-2 pt-4 border-t border-primary/10">
             <MessageSquare className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">답변 {answers.length}개</span>
+            <span className="text-sm text-muted-foreground">
+              답변 {answers.length}개
+            </span>
           </div>
         </Card>
 
@@ -153,8 +155,8 @@ export default function QuestionDetailPage() {
             <div className="flex items-center gap-2 mb-4">
               <Award className="h-5 w-5 text-primary animate-glow" />
               <h2 className="text-lg font-semibold">답변 작성</h2>
-              <span className="text-xs text-muted-foreground">
-                ({currentUser.role === "root" ? "ROOT" : "OPTIMIZER"} 전용)
+              <span className="text-s text-muted-foreground">
+                (Root 와 Optimizer 계급만 답변 작성이 가능합니다.)
               </span>
             </div>
             <Textarea
@@ -166,7 +168,7 @@ export default function QuestionDetailPage() {
             <div className="flex justify-end">
               <Button
                 onClick={handleSubmitAnswer}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+                className="bg-primary hover:bg-primary/90 text-black font-semibold shadow-neon hover:shadow-cpu transition-all px-6 py-2.5"
               >
                 답변 등록
               </Button>
@@ -200,34 +202,23 @@ export default function QuestionDetailPage() {
                 )}
 
                 <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div
-                      className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                        answer.role === "root"
-                          ? "bg-gradient-to-br from-yellow-500 to-orange-500"
-                          : "bg-gradient-to-br from-purple-500 to-pink-500"
-                      }`}
-                    >
-                      {answer.author.slice(0, 2).toUpperCase()}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="text-lg font-bold">{answer.author}</p>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          answer.role === "root"
+                            ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                            : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        }`}
+                      >
+                        {answer.role.toUpperCase()}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
+                        {answer.dev_group}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-medium">{answer.author}</p>
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            answer.role === "root"
-                              ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                              : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                          }`}
-                        >
-                          {answer.role.toUpperCase()}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
-                          {answer.dev_group}
-                        </span>
-                      </div>
-                      <BadgeDisplay badges={answer.badges} maxDisplay={3} />
-                    </div>
+                    <BadgeDisplay badges={answer.badges} maxDisplay={3} />
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
@@ -235,14 +226,18 @@ export default function QuestionDetailPage() {
                   </div>
                 </div>
 
-                <p className="text-muted-foreground whitespace-pre-wrap mb-4">{answer.content}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap mb-4">
+                  {answer.content}
+                </p>
 
                 {isAuthor && (
                   <div className="flex items-center gap-2 pt-4 border-t border-primary/10">
                     <Button
                       size="sm"
                       variant={answer.isAccepted ? "default" : "outline"}
-                      onClick={() => handleAccept(answer.id, !answer.isAccepted)}
+                      onClick={() =>
+                        handleAccept(answer.id, !answer.isAccepted)
+                      }
                       className={
                         answer.isAccepted
                           ? "bg-primary text-primary-foreground shadow-neon"
@@ -262,5 +257,3 @@ export default function QuestionDetailPage() {
     </Layout>
   );
 }
-
-

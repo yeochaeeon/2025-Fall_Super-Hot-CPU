@@ -6,10 +6,22 @@ import { Button } from "@/components/ui/button";
 import { RankCard } from "@/components/RankCard";
 import { CPUGauge } from "@/components/CPUGauge";
 import { BADGE_DATA } from "@/components/BadgeDisplay";
-import { Trophy, TrendingUp, Laugh, MessageSquare, ArrowRight, Flame } from "lucide-react";
+import {
+  Trophy,
+  TrendingUp,
+  Laugh,
+  MessageSquare,
+  ArrowRight,
+  Flame,
+  Heart,
+} from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+  const router = useRouter();
+  const [likedMemes, setLikedMemes] = useState<Set<number>>(new Set());
   const topUser = {
     rank: 1,
     username: "codemaster",
@@ -40,10 +52,45 @@ export default function HomePage() {
   ];
 
   const recentQuestions = [
-    { id: 1, author: "developer1", role: "백엔드", title: "API 설계 관련 질문입니다", answers: 3 },
-    { id: 2, author: "developer2", role: "프론트엔드", title: "상태 관리 라이브러리 추천", answers: 5 },
-    { id: 3, author: "developer3", role: "AI", title: "모델 학습 속도 개선 방법", answers: 2 },
+    {
+      id: 1,
+      author: "developer1",
+      role: "백엔드",
+      title: "API 설계 관련 질문입니다",
+      answers: 3,
+    },
+    {
+      id: 2,
+      author: "developer2",
+      role: "프론트엔드",
+      title: "상태 관리 라이브러리 추천",
+      answers: 5,
+    },
+    {
+      id: 3,
+      author: "developer3",
+      role: "AI",
+      title: "모델 학습 속도 개선 방법",
+      answers: 2,
+    },
   ];
+
+  const handleLike = (e: React.MouseEvent, memeId: number) => {
+    e.stopPropagation();
+    setLikedMemes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(memeId)) {
+        newSet.delete(memeId);
+      } else {
+        newSet.add(memeId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleCardClick = (memeId: number) => {
+    router.push(`/memes/${memeId}`);
+  };
 
   return (
     <Layout>
@@ -53,10 +100,10 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10" />
           <div className="relative z-10 text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold gradient-primary text-gradient animate-glow">
-              DevCPU Community
+              Who's the super hot CPU⁉️
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              개발자의 열정을 CPU 온도로 측정하는 커뮤니티
+            <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
+              오늘의 개발 몰입도가 곧 레벨이 되는 공간
             </p>
             <div className="flex items-center justify-center gap-4 pt-4">
               <CPUGauge temperature={72} size="lg" />
@@ -72,7 +119,10 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold">오늘의 랭킹</h2>
             </div>
             <Link href="/rankings">
-              <Button variant="ghost" className="hover:text-primary">
+              <Button
+                variant="ghost"
+                className="hover:bg-primary/10 hover:text-primary"
+              >
                 전체 보기
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -98,10 +148,18 @@ export default function HomePage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-primary/20">
                   <div>
-                    <p className="text-2xl font-bold gradient-primary text-gradient">{topRole.name}</p>
-                    <p className="text-sm text-muted-foreground">평균 CPU 온도</p>
+                    <p className="text-2xl font-bold gradient-primary text-gradient">
+                      {topRole.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      평균 CPU 온도
+                    </p>
                   </div>
-                  <CPUGauge temperature={topRole.avgTemp} size="md" showLabel={false} />
+                  <CPUGauge
+                    temperature={topRole.avgTemp}
+                    size="md"
+                    showLabel={false}
+                  />
                 </div>
                 <div className="p-3 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
                   <div className="space-y-2">
@@ -110,28 +168,38 @@ export default function HomePage() {
                         <span className="text-base">🤖</span>
                         <span className="text-muted-foreground">커밋 수</span>
                       </div>
-                      <span className="font-semibold text-foreground">평균 23</span>
+                      <span className="font-semibold text-foreground">
+                        평균 23
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-base">☕</span>
-                        <span className="text-muted-foreground">마신 커피 잔 수</span>
+                        <span className="text-muted-foreground">
+                          마신 커피 잔 수
+                        </span>
                       </div>
-                      <span className="font-semibold text-foreground">평균 5</span>
+                      <span className="font-semibold text-foreground">
+                        평균 5
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-base">😴</span>
                         <span className="text-muted-foreground">수면 시간</span>
                       </div>
-                      <span className="font-semibold text-foreground">평균 5 시간</span>
+                      <span className="font-semibold text-foreground">
+                        평균 5 시간
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-base">💺</span>
                         <span className="text-muted-foreground">개발 시간</span>
                       </div>
-                      <span className="font-semibold text-foreground">평균 12 시간</span>
+                      <span className="font-semibold text-foreground">
+                        평균 12 시간
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -148,7 +216,10 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold">인기 밈</h2>
             </div>
             <Link href="/memes">
-              <Button variant="ghost" className="hover:text-primary">
+              <Button
+                variant="ghost"
+                className="hover:bg-primary/10 hover:text-primary"
+              >
                 더보기
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -156,21 +227,45 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {recentMemes.map((meme) => (
-              <Card
-                key={meme.id}
-                className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all"
-              >
-                <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center">
-                  <Laugh className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-sm mb-2">{meme.content}</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>@{meme.author}</span>
-                  <span>❤️ {meme.likes}</span>
-                </div>
-              </Card>
-            ))}
+            {recentMemes.map((meme) => {
+              const isLiked = likedMemes.has(meme.id);
+              return (
+                <Card
+                  key={meme.id}
+                  onClick={() => handleCardClick(meme.id)}
+                  className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all cursor-pointer"
+                >
+                  <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center">
+                    <Laugh className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm mb-2">{meme.content}</p>
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-muted-foreground">
+                      @{meme.author}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`transition-all duration-200 ${
+                        isLiked
+                          ? "text-accent hover:bg-accent/20 hover:scale-105"
+                          : "hover:bg-accent/10 hover:text-accent hover:scale-105"
+                      }`}
+                      onClick={(e) => handleLike(e, meme.id)}
+                    >
+                      <Heart
+                        className={`h-4 w-4 mr-1 transition-all ${
+                          isLiked ? "fill-accent scale-110" : ""
+                        }`}
+                      />
+                      <span className="text-xs">
+                        {meme.likes + (isLiked ? 1 : 0)}
+                      </span>
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
@@ -182,7 +277,10 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold">최근 고민</h2>
             </div>
             <Link href="/questions">
-              <Button variant="ghost" className="hover:text-primary">
+              <Button
+                variant="ghost"
+                className="hover:bg-primary/10 hover:text-primary"
+              >
                 더보기
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -193,18 +291,26 @@ export default function HomePage() {
             {recentQuestions.map((question) => (
               <Card
                 key={question.id}
-                className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all"
+                onClick={() => router.push(`/questions/${question.id}`)}
+                className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-medium text-sm">@{question.author}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                        question.role === "프론트엔드" ? "bg-blue-500/20 text-blue-500 border-blue-500/50" :
-                        question.role === "백엔드" ? "bg-green-500/20 text-green-500 border-green-500/50" :
-                        question.role === "AI" ? "bg-purple-500/20 text-purple-500 border-purple-500/50" :
-                        "bg-orange-500/20 text-orange-500 border-orange-500/50"
-                      }`}>
+                      <span className="text-lg font-bold">
+                        @{question.author}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                          question.role === "프론트엔드"
+                            ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                            : question.role === "백엔드"
+                            ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/50"
+                            : question.role === "AI"
+                            ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/50"
+                            : "bg-pink-500/20 text-pink-400 border-pink-500/50"
+                        }`}
+                      >
                         {question.role}
                       </span>
                     </div>
@@ -223,4 +329,3 @@ export default function HomePage() {
     </Layout>
   );
 }
-

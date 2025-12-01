@@ -32,17 +32,18 @@ export function Layout({ children }: LayoutProps) {
                 <Flame className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold gradient-primary text-gradient">
-                DevCPU
+                who's the super hot CPU⁉️
               </span>
             </Link>
 
             {/* Navigation */}
             <nav className="flex items-center gap-1">
               {navigation.map((item) => {
-                const isActive = pathname === item.href || 
+                const isActive =
+                  pathname === item.href ||
                   (item.href !== "/" && pathname?.startsWith(item.href));
                 const Icon = item.icon;
-                
+
                 return (
                   <Link
                     key={item.name}
@@ -65,10 +66,7 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-8 max-w-7xl">{children}</main>
     </div>
   );
 }
-

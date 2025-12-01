@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DevCPU Community",
+  title: "Who's the super hot CPU??",
   description: "개발자 CPU 온도로 열정을 측정하는 커뮤니티",
 };
 
@@ -33,4 +33,3 @@ export default function RootLayout({
     </html>
   );
 }
-

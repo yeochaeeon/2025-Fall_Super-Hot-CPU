@@ -99,11 +99,11 @@ export default function MemesPage() {
   const getRankColor = (rank: string) => {
     switch (rank) {
       case "Root":
-        return "bg-accent/20 text-accent border-accent/50";
+        return "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30";
       case "Optimizer":
-        return "bg-secondary/20 text-secondary-foreground border-secondary/50";
+        return "bg-purple-500/20 text-purple-300 border border-purple-500/30";
       case "Hot Developer":
-        return "bg-cpu-hot/20 text-cpu-hot border-cpu-hot/50";
+        return "bg-orange-500/20 text-orange-300 border border-orange-500/30";
       default:
         return "bg-muted/50 text-foreground border-primary/20";
     }
@@ -140,25 +140,79 @@ export default function MemesPage() {
             </div>
           </div>
           <Link href="/memes/new">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon">
+            <Button className="bg-primary hover:bg-primary/90 text-black font-semibold shadow-neon hover:shadow-cpu transition-all px-6 py-2.5">
               <Plus className="h-4 w-4 mr-2" />밈 등록
             </Button>
           </Link>
         </div>
 
-        <div className="flex gap-4 flex-wrap">
-          <Select value={selectedDevGroup} onValueChange={setSelectedDevGroup}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="직군 필터" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체</SelectItem>
-              <SelectItem value="Frontend">Frontend</SelectItem>
-              <SelectItem value="Backend">Backend</SelectItem>
-              <SelectItem value="AI">AI</SelectItem>
-              <SelectItem value="Mobile">Mobile</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={selectedDevGroup === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDevGroup("all")}
+                className={
+                  selectedDevGroup === "all"
+                    ? "bg-primary text-black font-semibold border-primary hover:bg-primary/90"
+                    : "bg-transparent border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }
+              >
+                전체
+              </Button>
+              <Button
+                variant={
+                  selectedDevGroup === "Frontend" ? "default" : "outline"
+                }
+                size="sm"
+                onClick={() => setSelectedDevGroup("Frontend")}
+                className={
+                  selectedDevGroup === "Frontend"
+                    ? "bg-primary text-black font-semibold border-primary hover:bg-primary/90"
+                    : "bg-transparent border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }
+              >
+                FE
+              </Button>
+              <Button
+                variant={selectedDevGroup === "Backend" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDevGroup("Backend")}
+                className={
+                  selectedDevGroup === "Backend"
+                    ? "bg-primary text-black font-semibold border-primary hover:bg-primary/90"
+                    : "bg-transparent border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }
+              >
+                BE
+              </Button>
+              <Button
+                variant={selectedDevGroup === "AI" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDevGroup("AI")}
+                className={
+                  selectedDevGroup === "AI"
+                    ? "bg-primary text-black font-semibold border-primary hover:bg-primary/90"
+                    : "bg-transparent border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }
+              >
+                AI
+              </Button>
+              <Button
+                variant={selectedDevGroup === "Mobile" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDevGroup("Mobile")}
+                className={
+                  selectedDevGroup === "Mobile"
+                    ? "bg-primary text-black font-semibold border-primary hover:bg-primary/90"
+                    : "bg-transparent border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }
+              >
+                Mobile
+              </Button>
+            </div>
+          </div>
 
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[180px]">
@@ -185,7 +239,9 @@ export default function MemesPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-sm">{meme.username}</span>
+                    <span className="font-semibold text-sm">
+                      {meme.username}
+                    </span>
                     <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
                       {meme.devGroup}
                     </span>
@@ -205,13 +261,21 @@ export default function MemesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`hover:text-accent ${isLiked ? "text-accent" : ""}`}
+                      className={`transition-all duration-200 ${
+                        isLiked
+                          ? "text-accent hover:bg-accent/20 hover:scale-105"
+                          : "hover:bg-accent/10 hover:text-accent hover:scale-105"
+                      }`}
                       onClick={(e) => handleLike(e, meme.id)}
                     >
-                      <Heart 
-                        className={`h-4 w-4 mr-1 ${isLiked ? "fill-accent" : ""}`} 
+                      <Heart
+                        className={`h-4 w-4 mr-1 transition-all ${
+                          isLiked ? "fill-accent scale-110" : ""
+                        }`}
                       />
-                      <span className="text-xs">{meme.likes + (isLiked ? 1 : 0)}</span>
+                      <span className="text-xs">
+                        {meme.likes + (isLiked ? 1 : 0)}
+                      </span>
                     </Button>
                     <span className="text-xs text-muted-foreground">
                       {meme.timeAgo}

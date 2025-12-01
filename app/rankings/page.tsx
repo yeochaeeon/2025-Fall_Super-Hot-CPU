@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Trophy, TrendingUp, Flame } from "lucide-react";
-import { RankCard } from "@/components/RankCard";
+import { RankingCard } from "@/components/RankingCard";
 import { useState } from "react";
 
 // 기존 Vite Rankings 페이지의 내용을 그대로 사용
@@ -14,7 +14,7 @@ const mockRankings = [
     rank: 1,
     username: "최고봉",
     role: "Frontend",
-    temperature: 92.5,
+    temperature: 92,
     badges: [
       { icon: "🤖", name: "커밋 머신" },
       { icon: "🎨", name: "새 화면이 나를 부른다" },
@@ -31,7 +31,7 @@ const mockRankings = [
     rank: 2,
     username: "박코딩",
     role: "Backend",
-    temperature: 89.3,
+    temperature: 89,
     badges: [
       { icon: "🛠️", name: "JSON 상하차 중" },
       { icon: "🔥", name: "Release 지옥에서 날 꺼내줘" },
@@ -47,7 +47,7 @@ const mockRankings = [
     rank: 3,
     username: "김알고",
     role: "AI",
-    temperature: 87.1,
+    temperature: 87,
     badges: [
       { icon: "🥲", name: "Loss 안 내려가서 눈물 흘리는 중" },
       { icon: "💀", name: "라벨링 하다 영혼 가출" },
@@ -97,13 +97,14 @@ export default function RankingsPage() {
   const [selectedDevGroup, setSelectedDevGroup] = useState<string>("all");
 
   const filteredByDevGroup = (() => {
-    let filtered = selectedDevGroup === "all"
-      ? [...mockRankings]
-      : mockRankings.filter((r) => r.role === selectedDevGroup);
-    
+    let filtered =
+      selectedDevGroup === "all"
+        ? [...mockRankings]
+        : mockRankings.filter((r) => r.role === selectedDevGroup);
+
     // 온도 순으로 정렬 (높은 순)
     filtered = filtered.sort((a, b) => b.temperature - a.temperature);
-    
+
     // 1~5위로 rank 재할당하고 최대 5개만 반환
     return filtered.slice(0, 5).map((ranking, index) => ({
       ...ranking,
@@ -123,7 +124,7 @@ export default function RankingsPage() {
         </div>
 
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted/50">
+          <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted">
             <TabsTrigger
               value="today"
               className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
@@ -146,9 +147,9 @@ export default function RankingsPage() {
                 <Trophy className="h-5 w-5 text-primary" />
                 전체 Developer 랭킹
               </h2>
-              <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {mockRankings.map((ranking) => (
-                  <RankCard
+                  <RankingCard
                     key={ranking.rank}
                     rank={ranking.rank}
                     username={ranking.username}
@@ -174,32 +175,36 @@ export default function RankingsPage() {
                     onClick={() => setSelectedDevGroup("all")}
                     className={
                       selectedDevGroup === "all"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     전체
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Frontend" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Frontend" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Frontend")}
                     className={
                       selectedDevGroup === "Frontend"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     FE
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Backend" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Backend" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Backend")}
                     className={
                       selectedDevGroup === "Backend"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     BE
@@ -210,20 +215,22 @@ export default function RankingsPage() {
                     onClick={() => setSelectedDevGroup("AI")}
                     className={
                       selectedDevGroup === "AI"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     AI
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Mobile" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Mobile" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Mobile")}
                     className={
                       selectedDevGroup === "Mobile"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     Mobile
@@ -232,7 +239,7 @@ export default function RankingsPage() {
               </div>
               <div className="space-y-4">
                 {filteredByDevGroup.map((ranking) => (
-                  <RankCard
+                  <RankingCard
                     key={ranking.rank}
                     rank={ranking.rank}
                     username={ranking.username}
@@ -251,9 +258,9 @@ export default function RankingsPage() {
                 <Flame className="h-5 w-5 text-accent" />
                 누적 전체 랭킹
               </h2>
-              <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {mockRankings.map((ranking) => (
-                  <RankCard
+                  <RankingCard
                     key={ranking.rank}
                     rank={ranking.rank}
                     username={ranking.username}
@@ -279,32 +286,36 @@ export default function RankingsPage() {
                     onClick={() => setSelectedDevGroup("all")}
                     className={
                       selectedDevGroup === "all"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     전체
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Frontend" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Frontend" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Frontend")}
                     className={
                       selectedDevGroup === "Frontend"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     FE
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Backend" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Backend" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Backend")}
                     className={
                       selectedDevGroup === "Backend"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     BE
@@ -315,20 +326,22 @@ export default function RankingsPage() {
                     onClick={() => setSelectedDevGroup("AI")}
                     className={
                       selectedDevGroup === "AI"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     AI
                   </Button>
                   <Button
-                    variant={selectedDevGroup === "Mobile" ? "default" : "outline"}
+                    variant={
+                      selectedDevGroup === "Mobile" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedDevGroup("Mobile")}
                     className={
                       selectedDevGroup === "Mobile"
-                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
-                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                        ? "bg-primary/40 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/30 hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }
                   >
                     Mobile
@@ -337,7 +350,7 @@ export default function RankingsPage() {
               </div>
               <div className="space-y-4">
                 {filteredByDevGroup.map((ranking) => (
-                  <RankCard
+                  <RankingCard
                     key={ranking.rank}
                     rank={ranking.rank}
                     username={ranking.username}

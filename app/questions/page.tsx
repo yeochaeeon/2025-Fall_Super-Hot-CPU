@@ -27,7 +27,8 @@ export default function QuestionsPage() {
       author: "developer2",
       role: "프론트엔드",
       title: "상태 관리 라이브러리 추천해주세요",
-      content: "Redux와 Zustand 중에서 고민중입니다. 프로젝트 규모는 중간 정도이고...",
+      content:
+        "Redux와 Zustand 중에서 고민중입니다. 프로젝트 규모는 중간 정도이고...",
       answers: 5,
       time: "5시간 전",
       status: "답변 대기중",
@@ -42,7 +43,12 @@ export default function QuestionsPage() {
       answers: 2,
       time: "1일 전",
       status: "답변 대기중",
-      badges: [BADGE_DATA.epoch, BADGE_DATA.colab, BADGE_DATA.dataset, BADGE_DATA.experiment],
+      badges: [
+        BADGE_DATA.epoch,
+        BADGE_DATA.colab,
+        BADGE_DATA.dataset,
+        BADGE_DATA.experiment,
+      ],
     },
   ];
 
@@ -54,12 +60,14 @@ export default function QuestionsPage() {
             <MessageSquare className="h-8 w-8 text-primary animate-glow" />
             <div>
               <h1 className="text-3xl font-bold">고민 게시판</h1>
-              <p className="text-muted-foreground">개발 고민을 나누고 해결하세요</p>
+              <p className="text-muted-foreground">
+                개발 고민을 나누고 해결하세요
+              </p>
             </div>
           </div>
           <Button
             onClick={() => router.push("/questions/new")}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+            className="bg-primary hover:bg-primary/90 text-black font-semibold shadow-neon hover:shadow-cpu transition-all px-6 py-2.5"
           >
             <Plus className="h-4 w-4 mr-2" />
             고민 등록
@@ -74,19 +82,14 @@ export default function QuestionsPage() {
               className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card hover:shadow-neon transition-all cursor-pointer"
             >
               <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
-                    {question.author.slice(0, 2).toUpperCase()}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <p className="text-lg font-bold">{question.author}</p>
+                    <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
+                      {question.role}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="font-medium">{question.author}</p>
-                      <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
-                        {question.role}
-                      </span>
-                    </div>
-                    <BadgeDisplay badges={question.badges} maxDisplay={3} />
-                  </div>
+                  <BadgeDisplay badges={question.badges} maxDisplay={3} />
                 </div>
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <span
@@ -106,10 +109,16 @@ export default function QuestionsPage() {
               </div>
 
               <h3 className="text-lg font-semibold mb-2">{question.title}</h3>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{question.content}</p>
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                {question.content}
+              </p>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-primary/30 hover:bg-primary/10 hover:text-primary"
+                >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   답변 {question.answers}
                 </Button>
@@ -121,5 +130,3 @@ export default function QuestionsPage() {
     </Layout>
   );
 }
-
-
