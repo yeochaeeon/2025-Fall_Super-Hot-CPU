@@ -15,7 +15,17 @@ export default function HomePage() {
     username: "codemaster",
     role: "프론트엔드",
     temperature: 95,
-    badges: [BADGE_DATA.commits, BADGE_DATA.coffee, BADGE_DATA.pages],
+    badges: [
+      { icon: "🤖", name: "커밋 머신" },
+      { icon: "☕", name: "내 몸의 70%는 아메리카노" },
+      { icon: "🎨", name: "새 화면이 나를 부른다" },
+    ],
+    commonAnswers: {
+      commits: 25,
+      coffee: 5,
+      sleep: 4,
+      devTime: 12,
+    },
   };
 
   const topRole = {
@@ -85,12 +95,46 @@ export default function HomePage() {
                 <TrendingUp className="h-5 w-5 text-secondary" />
                 <h3 className="font-bold text-lg">오늘의 Hot CPU 직군</h3>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-primary/20">
-                <div>
-                  <p className="text-2xl font-bold gradient-primary text-gradient">{topRole.name}</p>
-                  <p className="text-sm text-muted-foreground">평균 CPU 온도</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-primary/20">
+                  <div>
+                    <p className="text-2xl font-bold gradient-primary text-gradient">{topRole.name}</p>
+                    <p className="text-sm text-muted-foreground">평균 CPU 온도</p>
+                  </div>
+                  <CPUGauge temperature={topRole.avgTemp} size="md" showLabel={false} />
                 </div>
-                <CPUGauge temperature={topRole.avgTemp} size="md" showLabel={false} />
+                <div className="p-3 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🤖</span>
+                        <span className="text-muted-foreground">커밋 수</span>
+                      </div>
+                      <span className="font-semibold text-foreground">평균 23</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">☕</span>
+                        <span className="text-muted-foreground">마신 커피 잔 수</span>
+                      </div>
+                      <span className="font-semibold text-foreground">평균 5</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">😴</span>
+                        <span className="text-muted-foreground">수면 시간</span>
+                      </div>
+                      <span className="font-semibold text-foreground">평균 5 시간</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">💺</span>
+                        <span className="text-muted-foreground">개발 시간</span>
+                      </div>
+                      <span className="font-semibold text-foreground">평균 12 시간</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
           </div>
@@ -153,9 +197,16 @@ export default function HomePage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-medium text-sm">@{question.author}</span>
-                      <span className="text-xs text-muted-foreground">· {question.role}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                        question.role === "프론트엔드" ? "bg-blue-500/20 text-blue-500 border-blue-500/50" :
+                        question.role === "백엔드" ? "bg-green-500/20 text-green-500 border-green-500/50" :
+                        question.role === "AI" ? "bg-purple-500/20 text-purple-500 border-purple-500/50" :
+                        "bg-orange-500/20 text-orange-500 border-orange-500/50"
+                      }`}>
+                        {question.role}
+                      </span>
                     </div>
                     <p className="font-semibold truncate">{question.title}</p>
                   </div>

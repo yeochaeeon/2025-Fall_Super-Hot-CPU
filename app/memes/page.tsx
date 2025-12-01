@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const mockMemes = [
   {
@@ -77,8 +79,10 @@ const mockMemes = [
 ];
 
 export default function MemesPage() {
+  const router = useRouter();
   const [selectedDevGroup, setSelectedDevGroup] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("likes");
+  const [likedMemes, setLikedMemes] = useState<Set<number>>(new Set());
 
   const filteredMemes =
     selectedDevGroup === "all"
@@ -105,6 +109,23 @@ export default function MemesPage() {
     }
   };
 
+  const handleLike = (e: React.MouseEvent, memeId: number) => {
+    e.stopPropagation();
+    setLikedMemes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(memeId)) {
+        newSet.delete(memeId);
+      } else {
+        newSet.add(memeId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleCardClick = (memeId: number) => {
+    router.push(`/memes/${memeId}`);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -118,9 +139,11 @@ export default function MemesPage() {
               </p>
             </div>
           </div>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon">
-            <Plus className="h-4 w-4 mr-2" />밈 등록
-          </Button>
+          <Link href="/memes/new">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon">
+              <Plus className="h-4 w-4 mr-2" />밈 등록
+            </Button>
+          </Link>
         </div>
 
         <div className="flex gap-4 flex-wrap">
@@ -149,48 +172,55 @@ export default function MemesPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sortedMemes.map((meme) => (
-            <Card
-              key={meme.id}
-              className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card hover:shadow-neon transition-all cursor-pointer"
-            >
-              <div className="aspect-square bg-muted rounded-lg mb-4 flex items-center justify-center">
-                <Laugh className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm">{meme.username}</span>
-                  <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
-                    {meme.devGroup}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs border ${getRankColor(
-                      meme.rank
-                    )}`}
-                  >
-                    {meme.rank}
-                  </span>
+          {sortedMemes.map((meme) => {
+            const isLiked = likedMemes.has(meme.id);
+            return (
+              <Card
+                key={meme.id}
+                onClick={() => handleCardClick(meme.id)}
+                className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card hover:shadow-neon transition-all cursor-pointer"
+              >
+                <div className="aspect-square bg-muted rounded-lg mb-4 flex items-center justify-center">
+                  <Laugh className="h-12 w-12 text-muted-foreground" />
                 </div>
-                <h3 className="font-bold text-sm">{meme.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {meme.content}
-                </p>
-                <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hover:text-accent"
-                  >
-                    <Heart className="h-4 w-4 mr-1" />
-                    <span className="text-xs">{meme.likes}</span>
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {meme.timeAgo}
-                  </span>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{meme.username}</span>
+                    <span className="px-2 py-0.5 rounded text-xs bg-muted/50 border border-primary/20">
+                      {meme.devGroup}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs border ${getRankColor(
+                        meme.rank
+                      )}`}
+                    >
+                      {meme.rank}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-base">{meme.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {meme.content}
+                  </p>
+                  <div className="flex items-center justify-between pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`hover:text-accent ${isLiked ? "text-accent" : ""}`}
+                      onClick={(e) => handleLike(e, meme.id)}
+                    >
+                      <Heart 
+                        className={`h-4 w-4 mr-1 ${isLiked ? "fill-accent" : ""}`} 
+                      />
+                      <span className="text-xs">{meme.likes + (isLiked ? 1 : 0)}</span>
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {meme.timeAgo}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </Layout>

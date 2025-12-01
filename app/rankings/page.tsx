@@ -3,15 +3,9 @@
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Trophy, TrendingUp, Flame } from "lucide-react";
 import { RankCard } from "@/components/RankCard";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useState } from "react";
 
 // 기존 Vite Rankings 페이지의 내용을 그대로 사용
@@ -22,10 +16,16 @@ const mockRankings = [
     role: "Frontend",
     temperature: 92.5,
     badges: [
-      { emoji: "🔥", name: "핫데브", description: "가장 높은 온도" },
-      { emoji: "⚡", name: "빠른손", description: "커밋왕" },
-      { emoji: "🎨", name: "디자이너", description: "UI 마스터" },
+      { icon: "🤖", name: "커밋 머신" },
+      { icon: "🎨", name: "새 화면이 나를 부른다" },
+      { icon: "🧩", name: "CSS가 왜 그럴까" },
     ],
+    commonAnswers: {
+      commits: 28,
+      coffee: 6,
+      sleep: 5,
+      devTime: 14,
+    },
   },
   {
     rank: 2,
@@ -33,9 +33,15 @@ const mockRankings = [
     role: "Backend",
     temperature: 89.3,
     badges: [
-      { emoji: "🚀", name: "성능왕", description: "최적화 달인" },
-      { emoji: "📚", name: "문서왕", description: "문서화 장인" },
+      { icon: "🛠️", name: "JSON 상하차 중" },
+      { icon: "🔥", name: "Release 지옥에서 날 꺼내줘" },
     ],
+    commonAnswers: {
+      commits: 22,
+      coffee: 4,
+      sleep: 6,
+      devTime: 11,
+    },
   },
   {
     rank: 3,
@@ -43,33 +49,67 @@ const mockRankings = [
     role: "AI",
     temperature: 87.1,
     badges: [
-      { emoji: "🤖", name: "AI마스터", description: "인공지능 전문가" },
-      { emoji: "🧠", name: "알고왕", description: "알고리즘 신" },
+      { icon: "🥲", name: "Loss 안 내려가서 눈물 흘리는 중" },
+      { icon: "💀", name: "라벨링 하다 영혼 가출" },
     ],
+    commonAnswers: {
+      commits: 18,
+      coffee: 7,
+      sleep: 3,
+      devTime: 15,
+    },
   },
   {
     rank: 4,
     username: "이모바일",
     role: "Mobile",
     temperature: 84.7,
-    badges: [{ emoji: "📱", name: "앱마스터", description: "모바일 전문" }],
+    badges: [
+      { icon: "🔨", name: "Gradle의 노예" },
+      { icon: "🔄", name: "컴포넌트 복붙 기계" },
+    ],
+    commonAnswers: {
+      commits: 20,
+      coffee: 3,
+      sleep: 7,
+      devTime: 10,
+    },
   },
   {
     rank: 5,
     username: "정풀스택",
     role: "Frontend",
     temperature: 82.9,
-    badges: [{ emoji: "⚡", name: "빠른손", description: "커밋왕" }],
+    badges: [
+      { icon: "🤖", name: "커밋 머신" },
+      { icon: "💺", name: "엉덩이가 무거워" },
+    ],
+    commonAnswers: {
+      commits: 25,
+      coffee: 5,
+      sleep: 5,
+      devTime: 12,
+    },
   },
 ];
 
 export default function RankingsPage() {
   const [selectedDevGroup, setSelectedDevGroup] = useState<string>("all");
 
-  const filteredByDevGroup =
-    selectedDevGroup === "all"
-      ? mockRankings
+  const filteredByDevGroup = (() => {
+    let filtered = selectedDevGroup === "all"
+      ? [...mockRankings]
       : mockRankings.filter((r) => r.role === selectedDevGroup);
+    
+    // 온도 순으로 정렬 (높은 순)
+    filtered = filtered.sort((a, b) => b.temperature - a.temperature);
+    
+    // 1~5위로 rank 재할당하고 최대 5개만 반환
+    return filtered.slice(0, 5).map((ranking, index) => ({
+      ...ranking,
+      rank: index + 1,
+    }));
+  })();
 
   return (
     <Layout>
@@ -115,32 +155,80 @@ export default function RankingsPage() {
                     role={ranking.role}
                     temperature={ranking.temperature}
                     badges={ranking.badges}
+                    commonAnswers={ranking.commonAnswers}
                   />
                 ))}
               </div>
             </Card>
 
             <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
-              <div className="flex items-center justify-between mb-6">
+              <div className="space-y-4 mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-secondary" />
                   직군별 랭킹
                 </h2>
-                <Select
-                  value={selectedDevGroup}
-                  onValueChange={setSelectedDevGroup}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="직군 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체</SelectItem>
-                    <SelectItem value="Frontend">Frontend</SelectItem>
-                    <SelectItem value="Backend">Backend</SelectItem>
-                    <SelectItem value="AI">AI</SelectItem>
-                    <SelectItem value="Mobile">Mobile</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant={selectedDevGroup === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("all")}
+                    className={
+                      selectedDevGroup === "all"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    전체
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Frontend" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Frontend")}
+                    className={
+                      selectedDevGroup === "Frontend"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    FE
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Backend" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Backend")}
+                    className={
+                      selectedDevGroup === "Backend"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    BE
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "AI" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("AI")}
+                    className={
+                      selectedDevGroup === "AI"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    AI
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Mobile" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Mobile")}
+                    className={
+                      selectedDevGroup === "Mobile"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    Mobile
+                  </Button>
+                </div>
               </div>
               <div className="space-y-4">
                 {filteredByDevGroup.map((ranking) => (
@@ -172,32 +260,80 @@ export default function RankingsPage() {
                     role={ranking.role}
                     temperature={ranking.temperature}
                     badges={ranking.badges}
+                    commonAnswers={ranking.commonAnswers}
                   />
                 ))}
               </div>
             </Card>
 
             <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
-              <div className="flex items-center justify-between mb-6">
+              <div className="space-y-4 mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Flame className="h-5 w-5 text-secondary" />
                   누적 직군별 랭킹
                 </h2>
-                <Select
-                  value={selectedDevGroup}
-                  onValueChange={setSelectedDevGroup}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="직군 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체</SelectItem>
-                    <SelectItem value="Frontend">Frontend</SelectItem>
-                    <SelectItem value="Backend">Backend</SelectItem>
-                    <SelectItem value="AI">AI</SelectItem>
-                    <SelectItem value="Mobile">Mobile</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant={selectedDevGroup === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("all")}
+                    className={
+                      selectedDevGroup === "all"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    전체
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Frontend" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Frontend")}
+                    className={
+                      selectedDevGroup === "Frontend"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    FE
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Backend" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Backend")}
+                    className={
+                      selectedDevGroup === "Backend"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    BE
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "AI" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("AI")}
+                    className={
+                      selectedDevGroup === "AI"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    AI
+                  </Button>
+                  <Button
+                    variant={selectedDevGroup === "Mobile" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDevGroup("Mobile")}
+                    className={
+                      selectedDevGroup === "Mobile"
+                        ? "bg-primary/80 text-primary-foreground border-primary hover:bg-primary/90"
+                        : "border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                    }
+                  >
+                    Mobile
+                  </Button>
+                </div>
               </div>
               <div className="space-y-4">
                 {filteredByDevGroup.map((ranking) => (
