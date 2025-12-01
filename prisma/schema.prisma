@@ -1,0 +1,226 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//////////////////////////////////////////////////////////
+// 1. dev_group / role / users
+//////////////////////////////////////////////////////////
+
+model dev_group {
+  dev_group_id Int      @id @default(autoincrement())
+  name         String
+  description  String?
+
+  users        users[]
+  question     question[]
+  hot_developer hot_developer[]
+  concern      concern[]
+}
+
+model role {
+  role_id Int      @id @default(autoincrement())
+  name    String   @unique
+
+  users   users[]
+}
+
+model users {
+  user_id        Int      @id @default(autoincrement())
+  nickname       String   @unique
+  dev_group_id   Int
+  role_id        Int
+  joined_at      DateTime @default(now())
+
+  total_answers  Int      @default(0)
+  total_accepted Int      @default(0)
+  hot_dev_count  Int      @default(0)
+
+  dev_group   dev_group @relation(fields: [dev_group_id], references: [dev_group_id])
+  role        role      @relation(fields: [role_id], references: [role_id])
+
+  daily_answer daily_answer[]
+  daily_score  daily_score[]
+  hot_developer hot_developer[]
+  meme         meme[]
+  meme_like    meme_like[]
+  user_daily_like user_daily_like[]
+  concern      concern[]
+  concern_answer concern_answer[]
+  weight_logs question_weight_log[]
+
+  user_badge  user_badge[]
+}
+
+//////////////////////////////////////////////////////////
+// 2. question / weight logs / badge
+//////////////////////////////////////////////////////////
+
+enum QuestionCategory {
+  COMMON
+  dev
+  SPECIAL
+}
+
+model question {
+  question_id    Int       @id @default(autoincrement())
+  content        String
+  category       QuestionCategory
+  dev_group_id   Int?
+  weight_percent Decimal   @db.Decimal(5,2)
+  is_active      Boolean   @default(true)
+
+  dev_group dev_group? @relation(fields: [dev_group_id], references: [dev_group_id])
+  weight_logs question_weight_log[]
+  badge       badge[]
+  daily_answer daily_answer[]
+}
+
+model question_weight_log {
+  weight_log_id    Int      @id @default(autoincrement())
+  question_id      Int
+  old_weight_percent Decimal @db.Decimal(5,2)
+  new_weight_percent Decimal @db.Decimal(5,2)
+  changed_by_root  Int
+  changed_at       DateTime @default(now())
+  reason           String?
+
+  question question @relation(fields: [question_id], references: [question_id])
+  changed_root users @relation(fields: [changed_by_root], references: [user_id])
+}
+
+//////////////////////////////////////////////////////////
+// 3. daily_answer / daily_score / hot_developer
+//////////////////////////////////////////////////////////
+
+model daily_answer {
+  daily_answer_id Int      @id @default(autoincrement())
+  user_id         Int
+  question_id     Int
+  answer_date     DateTime @db.Date
+  answer_value    Decimal  @db.Decimal(10,2)
+  created_at      DateTime @default(now())
+
+  user     users    @relation(fields: [user_id], references: [user_id])
+  question question @relation(fields: [question_id], references: [question_id])
+
+  @@unique([user_id, question_id, answer_date])
+}
+
+model daily_score {
+  user_id    Int
+  score_date DateTime @db.Date
+  cpu_score  Decimal  @db.Decimal(10,2)
+
+  user users @relation(fields: [user_id], references: [user_id])
+
+  @@id([user_id, score_date])
+}
+
+model hot_developer {
+  dev_group_id   Int
+  effective_date DateTime @db.Date
+  user_id        Int
+
+  dev_group dev_group @relation(fields: [dev_group_id], references: [dev_group_id])
+  user      users     @relation(fields: [user_id], references: [user_id])
+
+  @@id([dev_group_id, effective_date])
+}
+
+//////////////////////////////////////////////////////////
+// 4. badge / user_badge
+//////////////////////////////////////////////////////////
+
+model badge {
+  badge_id   Int      @id @default(autoincrement())
+  question_id Int
+  name       String
+  description String?
+
+  question question @relation(fields: [question_id], references: [question_id])
+  user_badge user_badge[]
+}
+
+model user_badge {
+  user_id       Int
+  badge_id      Int
+  granted_date  DateTime @db.Date @default(dbgenerated("CURRENT_DATE"))
+
+  user  users @relation(fields: [user_id], references: [user_id])
+  badge badge @relation(fields: [badge_id], references: [badge_id])
+
+  @@id([user_id, badge_id, granted_date])
+}
+
+//////////////////////////////////////////////////////////
+// 5. meme / meme_like / user_daily_like
+//////////////////////////////////////////////////////////
+
+model meme {
+  meme_id     Int      @id @default(autoincrement())
+  user_id     Int
+  title       String?
+  content_text String?
+  image_url   String?
+  created_at  DateTime @default(now())
+  like_count  Int      @default(0)
+
+  user users @relation(fields: [user_id], references: [user_id])
+  likes meme_like[]
+}
+
+model meme_like {
+  meme_id  Int
+  user_id  Int
+  liked_at DateTime @default(now())
+
+  meme meme @relation(fields: [meme_id], references: [meme_id])
+  user users @relation(fields: [user_id], references: [user_id])
+
+  @@id([meme_id, user_id])
+}
+
+model user_daily_like {
+  user_id    Int
+  like_date  DateTime @db.Date
+  like_count Int @default(0)
+
+  user users @relation(fields: [user_id], references: [user_id])
+
+  @@id([user_id, like_date])
+}
+
+//////////////////////////////////////////////////////////
+// 6. concern (고민게시판) / concern_answer
+//////////////////////////////////////////////////////////
+
+model concern {
+  concern_id   Int     @id @default(autoincrement())
+  user_id      Int
+  dev_group_id Int
+  title        String
+  content      String
+  created_at   DateTime @default(now())
+  was_good     Boolean?
+
+  user      users     @relation(fields: [user_id], references: [user_id])
+  dev_group dev_group @relation(fields: [dev_group_id], references: [dev_group_id])
+
+  answer concern_answer[]
+}
+
+model concern_answer {
+  concern_answer_id Int      @id @default(autoincrement())
+  concern_id        Int
+  user_id           Int
+  content           String
+  created_at        DateTime @default(now())
+  is_accepted       Boolean?
+
+  concern concern @relation(fields: [concern_id], references: [concern_id])
+  user    users   @relation(fields: [user_id], references: [user_id])
+}
