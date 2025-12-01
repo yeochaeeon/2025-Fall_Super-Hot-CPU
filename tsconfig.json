@@ -20,10 +20,10 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@/components/*": ["./app/src/components/*"],
-      "@/hooks/*": ["./app/src/hooks/*"],
-      "@/lib/*": ["./app/src/lib/*"],
-      "@/integrations/*": ["./app/src/integrations/*"]
+      "@/components/*": ["./app/components/*"],
+      "@/hooks/*": ["./app/hooks/*"],
+      "@/lib/*": ["./app/lib/*"],
+      "@/integrations/*": ["./app/integrations/*"]
     }
   },
   "include": [
