@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -52,16 +47,9 @@
   --color-sidebar-ring: hsl(var(--ring));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -70,13 +58,13 @@ body {
 @layer base {
   :root {
     /* Developer-themed dark mode colors */
-    --background: 220 20% 6%;
+    --background: 0 0% 0%;
     --foreground: 155 50% 95%;
 
-    --card: 220 20% 8%;
+    --card: 0 0% 3%;
     --card-foreground: 155 50% 95%;
 
-    --popover: 220 20% 10%;
+    --popover: 0 0% 5%;
     --popover-foreground: 155 50% 95%;
 
     /* Neon green - terminal/code feel */
@@ -87,7 +75,7 @@ body {
     --secondary: 190 95% 55%;
     --secondary-foreground: 220 20% 6%;
 
-    --muted: 220 15% 15%;
+    --muted: 0 0% 10%;
     --muted-foreground: 155 20% 65%;
 
     /* Hot CPU color - orange/red */
@@ -97,14 +85,14 @@ body {
     --destructive: 0 85% 60%;
     --destructive-foreground: 155 50% 95%;
 
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
     --ring: 155 85% 55%;
 
     --radius: 0.75rem;
 
     /* Custom design tokens */
-    --code-bg: 220 20% 10%;
+    --code-bg: 0 0% 5%;
     --cpu-hot: 15 90% 60%;
     --cpu-warm: 35 90% 60%;
     --cpu-cool: 155 85% 55%;
@@ -112,7 +100,7 @@ body {
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(155 85% 55%), hsl(190 95% 55%));
     --gradient-cpu: linear-gradient(90deg, hsl(155 85% 55%), hsl(35 90% 60%), hsl(15 90% 60%));
-    --gradient-dark: linear-gradient(180deg, hsl(220 20% 8%), hsl(220 20% 6%));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 3%), hsl(0 0% 0%));
 
     /* Shadows & Effects */
     --shadow-neon: 0 0 20px hsl(155 85% 55% / 0.3);
