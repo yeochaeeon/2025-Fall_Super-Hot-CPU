@@ -1,65 +1,175 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Layout } from "@/components/Layout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RankCard } from "@/components/RankCard";
+import { CPUGauge } from "@/components/CPUGauge";
+import { BADGE_DATA } from "@/components/BadgeDisplay";
+import { Trophy, TrendingUp, Laugh, MessageSquare, ArrowRight, Flame } from "lucide-react";
+import Link from "next/link";
+
+export default function HomePage() {
+  const topUser = {
+    rank: 1,
+    username: "codemaster",
+    role: "프론트엔드",
+    temperature: 95,
+    badges: [BADGE_DATA.commits, BADGE_DATA.coffee, BADGE_DATA.pages],
+  };
+
+  const topRole = {
+    name: "프론트엔드",
+    avgTemp: 87,
+  };
+
+  const recentMemes = [
+    { id: 1, author: "dev1", content: "CSS가 왜 그럴까...", likes: 42 },
+    { id: 2, author: "dev2", content: "배포 지옥에서 날 꺼내줘", likes: 38 },
+    { id: 3, author: "dev3", content: "커밋 머신 가동 중", likes: 35 },
+  ];
+
+  const recentQuestions = [
+    { id: 1, author: "developer1", role: "백엔드", title: "API 설계 관련 질문입니다", answers: 3 },
+    { id: 2, author: "developer2", role: "프론트엔드", title: "상태 관리 라이브러리 추천", answers: 5 },
+    { id: 3, author: "developer3", role: "AI", title: "모델 학습 속도 개선 방법", answers: 2 },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <Layout>
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-dark p-8 md:p-12 shadow-card">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10" />
+          <div className="relative z-10 text-center space-y-4">
+            <h1 className="text-4xl md:text-5xl font-bold gradient-primary text-gradient animate-glow">
+              DevCPU Community
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              개발자의 열정을 CPU 온도로 측정하는 커뮤니티
+            </p>
+            <div className="flex items-center justify-center gap-4 pt-4">
+              <CPUGauge temperature={72} size="lg" />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {/* Today's Rankings Summary */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">오늘의 랭킹</h2>
+            </div>
+            <Link href="/rankings">
+              <Button variant="ghost" className="hover:text-primary">
+                전체 보기
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Top User */}
+            <Card className="p-6 bg-card/50 backdrop-blur border-primary/30 shadow-neon">
+              <div className="flex items-center gap-2 mb-4">
+                <Flame className="h-5 w-5 text-accent" />
+                <h3 className="font-bold text-lg">오늘의 Hot Developer</h3>
+              </div>
+              <RankCard {...topUser} />
+            </Card>
+
+            {/* Top Role */}
+            <Card className="p-6 bg-card/50 backdrop-blur border-primary/30 shadow-neon">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="h-5 w-5 text-secondary" />
+                <h3 className="font-bold text-lg">오늘의 Hot CPU 직군</h3>
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-primary/20">
+                <div>
+                  <p className="text-2xl font-bold gradient-primary text-gradient">{topRole.name}</p>
+                  <p className="text-sm text-muted-foreground">평균 CPU 온도</p>
+                </div>
+                <CPUGauge temperature={topRole.avgTemp} size="md" showLabel={false} />
+              </div>
+            </Card>
+          </div>
+        </section>
+
+        {/* Memes Summary */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Laugh className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">인기 밈</h2>
+            </div>
+            <Link href="/memes">
+              <Button variant="ghost" className="hover:text-primary">
+                더보기
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {recentMemes.map((meme) => (
+              <Card
+                key={meme.id}
+                className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all"
+              >
+                <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center">
+                  <Laugh className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-sm mb-2">{meme.content}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>@{meme.author}</span>
+                  <span>❤️ {meme.likes}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Questions Summary */}
+        <section className="space-y-4 pb-20 md:pb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">최근 고민</h2>
+            </div>
+            <Link href="/questions">
+              <Button variant="ghost" className="hover:text-primary">
+                더보기
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {recentQuestions.map((question) => (
+              <Card
+                key={question.id}
+                className="p-4 bg-card/50 backdrop-blur border-primary/20 hover:shadow-neon transition-all"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">@{question.author}</span>
+                      <span className="text-xs text-muted-foreground">· {question.role}</span>
+                    </div>
+                    <p className="font-semibold truncate">{question.title}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MessageSquare className="h-4 w-4" />
+                    {question.answers}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </div>
+    </Layout>
   );
 }
+

@@ -6,10 +6,50 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Tailwind v4 color tokens mapping our design system */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Custom CPU colors */
+  --color-cpu-hot: hsl(var(--cpu-hot));
+  --color-cpu-warm: hsl(var(--cpu-warm));
+  --color-cpu-cool: hsl(var(--cpu-cool));
+
+  /* Sidebar (used by shadcn sidebar component) */
+  --color-sidebar: hsl(var(--card));
+  --color-sidebar-foreground: hsl(var(--card-foreground));
+  --color-sidebar-border: hsl(var(--border));
+  --color-sidebar-accent: hsl(var(--accent));
+  --color-sidebar-accent-foreground: hsl(var(--accent-foreground));
+  --color-sidebar-ring: hsl(var(--ring));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,3 +64,158 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* --- DevCPU 디자인 시스템 (기존 Vite index.css에서 마이그레이션) --- */
+
+@layer base {
+  :root {
+    /* Developer-themed dark mode colors */
+    --background: 220 20% 6%;
+    --foreground: 155 50% 95%;
+
+    --card: 220 20% 8%;
+    --card-foreground: 155 50% 95%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 155 50% 95%;
+
+    /* Neon green - terminal/code feel */
+    --primary: 155 85% 55%;
+    --primary-foreground: 220 20% 6%;
+
+    /* Cyber blue accent */
+    --secondary: 190 95% 55%;
+    --secondary-foreground: 220 20% 6%;
+
+    --muted: 220 15% 15%;
+    --muted-foreground: 155 20% 65%;
+
+    /* Hot CPU color - orange/red */
+    --accent: 15 90% 60%;
+    --accent-foreground: 220 20% 6%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 155 50% 95%;
+
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 155 85% 55%;
+
+    --radius: 0.75rem;
+
+    /* Custom design tokens */
+    --code-bg: 220 20% 10%;
+    --cpu-hot: 15 90% 60%;
+    --cpu-warm: 35 90% 60%;
+    --cpu-cool: 155 85% 55%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(155 85% 55%), hsl(190 95% 55%));
+    --gradient-cpu: linear-gradient(90deg, hsl(155 85% 55%), hsl(35 90% 60%), hsl(15 90% 60%));
+    --gradient-dark: linear-gradient(180deg, hsl(220 20% 8%), hsl(220 20% 6%));
+
+    /* Shadows & Effects */
+    --shadow-neon: 0 0 20px hsl(155 85% 55% / 0.3);
+    --shadow-cpu: 0 0 30px hsl(15 90% 60% / 0.4);
+    --shadow-card: 0 10px 40px hsl(220 20% 3% / 0.5);
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-cpu {
+    background: var(--gradient-cpu);
+  }
+
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+
+  .shadow-neon {
+    box-shadow: var(--shadow-neon);
+  }
+
+  .shadow-cpu {
+    box-shadow: var(--shadow-cpu);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      text-shadow: 0 0 5px hsl(var(--primary) / 0.5), 0 0 10px hsl(var(--primary) / 0.3);
+    }
+    to {
+      text-shadow: 0 0 10px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
+    }
+  }
+
+  .cpu-meter {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cpu-meter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.3), transparent);
+    animation: scan 2s linear infinite;
+  }
+
+  @keyframes scan {
+    to {
+      left: 100%;
+    }
+  }
+}
+
