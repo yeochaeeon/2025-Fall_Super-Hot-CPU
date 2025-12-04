@@ -5,7 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BadgeDisplay, BADGE_DATA } from "@/components/BadgeDisplay";
-import { MessageSquare, Clock, CheckCircle2, Award } from "lucide-react";
+import {
+  MessageSquare,
+  Clock,
+  CheckCircle2,
+  Award,
+  ArrowLeft,
+} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -114,9 +120,10 @@ export default function QuestionDetailPage() {
           <Button
             variant="ghost"
             onClick={() => router.push("/questions")}
-            className="text-muted-foreground hover:text-foreground"
+            className="hover:bg-primary/20 hover:text-primar"
           >
-            ← 목록으로
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            목록으로
           </Button>
         </div>
 

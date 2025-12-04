@@ -7,24 +7,28 @@ import { Laugh, Heart, ArrowLeft, Clock } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
-const mockMemes: Record<number, {
-  id: number;
-  username: string;
-  devGroup: string;
-  rank: string;
-  title: string;
-  content: string;
-  likes: number;
-  timeAgo: string;
-  image?: string;
-}> = {
+const mockMemes: Record<
+  number,
+  {
+    id: number;
+    username: string;
+    devGroup: string;
+    rank: string;
+    title: string;
+    content: string;
+    likes: number;
+    timeAgo: string;
+    image?: string;
+  }
+> = {
   1: {
     id: 1,
     username: "최고봉",
     devGroup: "Frontend",
     rank: "Hot Developer",
     title: "프론트엔드 개발자의 일상",
-    content: "CSS 한 줄 바꿨는데 전체 레이아웃이...\n\n오늘도 하루 종일 CSS와 씨름했다. 한 줄만 바꿨는데 전체 레이아웃이 깨져서 3시간을 디버깅했다. 프론트엔드 개발자의 인생이란...",
+    content:
+      "CSS 한 줄 바꿨는데 전체 레이아웃이...\n\n오늘도 하루 종일 CSS와 씨름했다. 한 줄만 바꿨는데 전체 레이아웃이 깨져서 3시간을 디버깅했다. 프론트엔드 개발자의 인생이란...",
     likes: 42,
     timeAgo: "2시간 전",
   },
@@ -34,7 +38,8 @@ const mockMemes: Record<number, {
     devGroup: "Backend",
     rank: "Optimizer",
     title: "백엔드의 고통",
-    content: "프론트: API 왜 안돼요?\n백엔드: ...\n\n매일 같은 질문을 받는다. API 문서는 있는데 왜 안 읽는 걸까?",
+    content:
+      "프론트: API 왜 안돼요?\n백엔드: ...\n\n매일 같은 질문을 받는다. API 문서는 있는데 왜 안 읽는 걸까?",
     likes: 38,
     timeAgo: "3시간 전",
   },
@@ -54,7 +59,8 @@ const mockMemes: Record<number, {
     devGroup: "Mobile",
     rank: "Hot Developer",
     title: "앱 개발자의 하루",
-    content: "iOS에서는 되는데 Android에서는...\n\n플랫폼별로 다른 버그를 만나면 정말 답답하다.",
+    content:
+      "iOS에서는 되는데 Android에서는...\n\n플랫폼별로 다른 버그를 만나면 정말 답답하다.",
     likes: 29,
     timeAgo: "1일 전",
   },
@@ -64,7 +70,8 @@ const mockMemes: Record<number, {
     devGroup: "Frontend",
     rank: "Developer",
     title: "풀스택의 삶",
-    content: "프론트도 하고 백도 하고... 정신없어\n\n풀스택 개발자는 정말 모든 걸 다 해야 한다.",
+    content:
+      "프론트도 하고 백도 하고... 정신없어\n\n풀스택 개발자는 정말 모든 걸 다 해야 한다.",
     likes: 35,
     timeAgo: "1일 전",
   },
@@ -74,7 +81,8 @@ const mockMemes: Record<number, {
     devGroup: "Backend",
     rank: "Root",
     title: "서버 점검중",
-    content: "새벽 2시에 서버가 다운되는 건 왜일까\n\n항상 새벽에 문제가 생긴다. 왜 그럴까?",
+    content:
+      "새벽 2시에 서버가 다운되는 건 왜일까\n\n항상 새벽에 문제가 생긴다. 왜 그럴까?",
     likes: 67,
     timeAgo: "2일 전",
   },
@@ -127,7 +135,7 @@ export default function MemeDetailPage() {
         <Button
           variant="ghost"
           onClick={() => router.push("/memes")}
-          className="text-muted-foreground hover:text-foreground"
+          className="hover:bg-primary/20 hover:text-primar"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           목록으로
@@ -186,8 +194,8 @@ export default function MemeDetailPage() {
                 className={`hover:text-accent ${isLiked ? "text-accent" : ""}`}
                 onClick={handleLike}
               >
-                <Heart 
-                  className={`h-5 w-5 mr-2 ${isLiked ? "fill-accent" : ""}`} 
+                <Heart
+                  className={`h-5 w-5 mr-2 ${isLiked ? "fill-accent" : ""}`}
                 />
                 <span>{meme.likes + (isLiked ? 1 : 0)}</span>
               </Button>
@@ -198,4 +206,3 @@ export default function MemeDetailPage() {
     </Layout>
   );
 }
-
