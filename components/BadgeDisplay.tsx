@@ -35,13 +35,6 @@ export const BADGE_DATA: Record<string, Badge> = {
     icon: "🐛",
     color: "text-red-500",
   },
-  hot: {
-    id: "hot",
-    name: "Hot Developer",
-    description: "오늘의 Hot Developer",
-    icon: "🔥",
-    color: "text-orange-500",
-  },
   apiDev: {
     id: "apiDev",
     name: "API 마스터",

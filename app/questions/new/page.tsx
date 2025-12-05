@@ -13,21 +13,87 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, Loader2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
 
 export default function QuestionNewPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [role, setRole] = useState("");
+  const [devGroup, setDevGroup] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  // devGroup을 devGroupId로 변환
+  const devGroupMap: Record<string, number> = {
+    frontend: 1,
+    backend: 2,
+    ai: 3,
+    mobile: 4,
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // TODO: Backend integration
-    console.log({ title, content, role });
-    router.push("/questions");
+
+    if (!title.trim() || !content.trim() || !devGroup) {
+      toast({
+        title: "오류",
+        description: "모든 필드를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const devGroupId = devGroupMap[devGroup];
+    if (!devGroupId) {
+      toast({
+        title: "오류",
+        description: "올바른 직군을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          devGroupId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "성공",
+          description: "고민이 등록되었습니다!",
+        });
+        router.push("/questions");
+      } else {
+        toast({
+          title: "오류",
+          description: data.error || "고민 등록에 실패했습니다.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Submit concern error:", error);
+      toast({
+        title: "오류",
+        description: "고민 등록 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -44,12 +110,12 @@ export default function QuestionNewPage() {
         <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="role" className="text-foreground">
+              <Label htmlFor="devGroup" className="text-foreground">
                 직군 <span className="text-accent">*</span>
               </Label>
-              <Select value={role} onValueChange={setRole} required>
+              <Select value={devGroup} onValueChange={setDevGroup} required>
                 <SelectTrigger
-                  id="role"
+                  id="devGroup"
                   className="bg-muted/30 border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <SelectValue placeholder="직군을 선택하세요" />
@@ -106,9 +172,19 @@ export default function QuestionNewPage() {
               <Button
                 type="submit"
                 className="flex-1 bg-primary hover:bg-primary/90 text-black shadow-neon"
+                disabled={isSubmitting}
               >
-                <Send className="h-4 w-4 mr-2" />
-                등록하기
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    등록 중...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    등록하기
+                  </>
+                )}
               </Button>
             </div>
           </form>

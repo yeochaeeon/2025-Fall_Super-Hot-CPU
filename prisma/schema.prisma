@@ -1,5 +1,6 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -31,6 +32,7 @@ model role {
 model users {
   user_id        Int      @id @default(autoincrement())
   nickname       String   @unique
+  password       String   // 해시된 비밀번호 저장
   dev_group_id   Int
   role_id        Int
   joined_at      DateTime @default(now())
@@ -77,6 +79,9 @@ model question {
   weight_logs question_weight_log[]
   badge       badge[]
   daily_answer daily_answer[]
+
+  @@index([category])
+  @@index([category, dev_group_id])
 }
 
 model question_weight_log {
@@ -108,6 +113,9 @@ model daily_answer {
   question question @relation(fields: [question_id], references: [question_id])
 
   @@unique([user_id, question_id, answer_date])
+  @@index([answer_date])
+  @@index([user_id, answer_date])
+  @@index([question_id, answer_date])
 }
 
 model daily_score {
@@ -118,6 +126,8 @@ model daily_score {
   user users @relation(fields: [user_id], references: [user_id])
 
   @@id([user_id, score_date])
+  @@index([score_date])
+  @@index([score_date, cpu_score])
 }
 
 model hot_developer {
@@ -154,6 +164,8 @@ model user_badge {
   badge badge @relation(fields: [badge_id], references: [badge_id])
 
   @@id([user_id, badge_id, granted_date])
+  @@index([user_id, granted_date])
+  @@index([granted_date])
 }
 
 //////////////////////////////////////////////////////////

@@ -67,7 +67,7 @@ export function RankCard({
     {
       key: "devTime",
       label: "개발 시간",
-      icon: "💺",
+      icon: "⏳",
       value: commonAnswers?.devTime,
       unit: "시간",
     },
@@ -116,7 +116,7 @@ export function RankCard({
                 className="flex items-center justify-between text-sm"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base">{q.icon}</span>
+                  <span className="text-xl">{q.icon}</span>
                   <span className="text-muted-foreground">{q.label}</span>
                 </div>
                 <span className="font-semibold text-foreground">

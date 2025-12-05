@@ -4,113 +4,149 @@ import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp, Flame } from "lucide-react";
+import { Trophy, TrendingUp, Flame, Loader2 } from "lucide-react";
 import { RankingCard } from "@/components/RankingCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// 기존 Vite Rankings 페이지의 내용을 그대로 사용
-const mockRankings = [
-  {
-    rank: 1,
-    username: "최고봉",
-    role: "Frontend",
-    temperature: 92,
-    badges: [
-      { icon: "🤖", name: "커밋 머신" },
-      { icon: "🎨", name: "새 화면이 나를 부른다" },
-      { icon: "🧩", name: "CSS가 왜 그럴까" },
-    ],
-    commonAnswers: {
-      commits: 28,
-      coffee: 6,
-      sleep: 5,
-      devTime: 14,
-    },
-  },
-  {
-    rank: 2,
-    username: "박코딩",
-    role: "Backend",
-    temperature: 89,
-    badges: [
-      { icon: "🛠️", name: "JSON 상하차 중" },
-      { icon: "🔥", name: "Release 지옥에서 날 꺼내줘" },
-    ],
-    commonAnswers: {
-      commits: 22,
-      coffee: 4,
-      sleep: 6,
-      devTime: 11,
-    },
-  },
-  {
-    rank: 3,
-    username: "김알고",
-    role: "AI",
-    temperature: 87,
-    badges: [
-      { icon: "🥲", name: "Loss 안 내려가서 눈물 흘리는 중" },
-      { icon: "💀", name: "라벨링 하다 영혼 가출" },
-    ],
-    commonAnswers: {
-      commits: 18,
-      coffee: 7,
-      sleep: 3,
-      devTime: 15,
-    },
-  },
-  {
-    rank: 4,
-    username: "이모바일",
-    role: "Mobile",
-    temperature: 84.7,
-    badges: [
-      { icon: "🔨", name: "Gradle의 노예" },
-      { icon: "🔄", name: "컴포넌트 복붙 기계" },
-    ],
-    commonAnswers: {
-      commits: 20,
-      coffee: 3,
-      sleep: 7,
-      devTime: 10,
-    },
-  },
-  {
-    rank: 5,
-    username: "정풀스택",
-    role: "Frontend",
-    temperature: 82.9,
-    badges: [
-      { icon: "🤖", name: "커밋 머신" },
-      { icon: "💺", name: "엉덩이가 무거워" },
-    ],
-    commonAnswers: {
-      commits: 25,
-      coffee: 5,
-      sleep: 5,
-      devTime: 12,
-    },
-  },
-];
+interface Ranking {
+  rank: number;
+  username: string;
+  role: string;
+  temperature: number;
+  badges: Array<{ icon: string; name: string }>;
+  commonAnswers?: {
+    commits: number;
+    coffee: number;
+    sleep: number;
+    devTime: number;
+  };
+}
 
 export default function RankingsPage() {
   const [selectedDevGroup, setSelectedDevGroup] = useState<string>("all");
+  // 전체 랭킹용 (항상 전체 데이터)
+  const [todayAllRankings, setTodayAllRankings] = useState<Ranking[]>([]);
+  const [totalAllRankings, setTotalAllRankings] = useState<Ranking[]>([]);
+  // 직군별 랭킹용 (선택된 직군 데이터)
+  const [todayGroupRankings, setTodayGroupRankings] = useState<Ranking[]>([]);
+  const [totalGroupRankings, setTotalGroupRankings] = useState<Ranking[]>([]);
+  const [isLoadingTodayAll, setIsLoadingTodayAll] = useState(true);
+  const [isLoadingTotalAll, setIsLoadingTotalAll] = useState(true);
+  const [isLoadingTodayGroup, setIsLoadingTodayGroup] = useState(true);
+  const [isLoadingTotalGroup, setIsLoadingTotalGroup] = useState(true);
+  const [activeTab, setActiveTab] = useState("today");
 
-  const filteredByDevGroup = (() => {
-    let filtered =
-      selectedDevGroup === "all"
-        ? [...mockRankings]
-        : mockRankings.filter((r) => r.role === selectedDevGroup);
+  // devGroup 매핑 (프론트엔드=1, 백엔드=2, AI=3, 모바일=4)
+  const devGroupMap: Record<string, string> = {
+    all: "all",
+    Frontend: "1",
+    Backend: "2",
+    AI: "3",
+    Mobile: "4",
+  };
 
-    // 온도 순으로 정렬 (높은 순)
-    filtered = filtered.sort((a, b) => b.temperature - a.temperature);
+  // 전체 랭킹 로드 (항상 "all")
+  const loadTodayAllRankings = async () => {
+    try {
+      setIsLoadingTodayAll(true);
+      const response = await fetch(`/api/rankings/today?devGroup=all`);
+      const data = await response.json();
 
-    // 1~5위로 rank 재할당하고 최대 5개만 반환
-    return filtered.slice(0, 5).map((ranking, index) => ({
-      ...ranking,
-      rank: index + 1,
-    }));
-  })();
+      if (response.ok) {
+        setTodayAllRankings(data.rankings || []);
+      }
+    } catch (error) {
+      console.error("Load today all rankings error:", error);
+    } finally {
+      setIsLoadingTodayAll(false);
+    }
+  };
+
+  const loadTotalAllRankings = async () => {
+    try {
+      setIsLoadingTotalAll(true);
+      const response = await fetch(`/api/rankings/total?devGroup=all`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setTotalAllRankings(data.rankings || []);
+      }
+    } catch (error) {
+      console.error("Load total all rankings error:", error);
+    } finally {
+      setIsLoadingTotalAll(false);
+    }
+  };
+
+  // 직군별 랭킹 로드 (선택된 직군)
+  const loadTodayGroupRankings = async () => {
+    try {
+      setIsLoadingTodayGroup(true);
+      const devGroupParam = devGroupMap[selectedDevGroup] || "all";
+      const response = await fetch(
+        `/api/rankings/today?devGroup=${devGroupParam}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setTodayGroupRankings(data.rankings || []);
+      }
+    } catch (error) {
+      console.error("Load today group rankings error:", error);
+    } finally {
+      setIsLoadingTodayGroup(false);
+    }
+  };
+
+  const loadTotalGroupRankings = async () => {
+    try {
+      setIsLoadingTotalGroup(true);
+      const devGroupParam = devGroupMap[selectedDevGroup] || "all";
+      const response = await fetch(
+        `/api/rankings/total?devGroup=${devGroupParam}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setTotalGroupRankings(data.rankings || []);
+      }
+    } catch (error) {
+      console.error("Load total group rankings error:", error);
+    } finally {
+      setIsLoadingTotalGroup(false);
+    }
+  };
+
+  // 전체 랭킹은 탭 변경 시에만 로드
+  useEffect(() => {
+    if (activeTab === "today") {
+      loadTodayAllRankings();
+    } else {
+      loadTotalAllRankings();
+    }
+  }, [activeTab]);
+
+  // 직군별 랭킹은 탭과 선택된 직군 변경 시 로드
+  useEffect(() => {
+    if (activeTab === "today") {
+      loadTodayGroupRankings();
+    } else {
+      loadTotalGroupRankings();
+    }
+  }, [selectedDevGroup, activeTab]);
+
+  // 전체 랭킹 데이터
+  const allRankings =
+    activeTab === "today" ? todayAllRankings : totalAllRankings;
+  const isLoadingAll =
+    activeTab === "today" ? isLoadingTodayAll : isLoadingTotalAll;
+  const top3AllRankings = allRankings.slice(0, 3);
+
+  // 직군별 랭킹 데이터
+  const groupRankings =
+    activeTab === "today" ? todayGroupRankings : totalGroupRankings;
+  const isLoadingGroup =
+    activeTab === "today" ? isLoadingTodayGroup : isLoadingTotalGroup;
 
   return (
     <Layout>
@@ -123,7 +159,7 @@ export default function RankingsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="today" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted">
             <TabsTrigger
               value="today"
@@ -147,26 +183,38 @@ export default function RankingsPage() {
                 <Trophy className="h-5 w-5 text-primary" />
                 전체 Developer 랭킹
               </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {mockRankings.map((ranking) => (
-                  <RankingCard
-                    key={ranking.rank}
-                    rank={ranking.rank}
-                    username={ranking.username}
-                    role={ranking.role}
-                    temperature={ranking.temperature}
-                    badges={ranking.badges}
-                    commonAnswers={ranking.commonAnswers}
-                  />
-                ))}
-              </div>
+              {isLoadingAll ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : top3AllRankings.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {top3AllRankings.map((ranking: Ranking) => (
+                    <RankingCard
+                      key={ranking.rank}
+                      rank={ranking.rank}
+                      username={ranking.username}
+                      role={ranking.role}
+                      temperature={ranking.temperature}
+                      badges={ranking.badges}
+                      commonAnswers={ranking.commonAnswers}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-12">
+                  아직 랭킹 데이터가 없습니다.
+                </p>
+              )}
             </Card>
 
             <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
               <div className="space-y-4 mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-secondary" />
-                  직군별 랭킹
+                  {selectedDevGroup === "all"
+                    ? "직군별 랭킹"
+                    : `${selectedDevGroup} 랭킹`}
                 </h2>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
@@ -237,18 +285,31 @@ export default function RankingsPage() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-4">
-                {filteredByDevGroup.map((ranking) => (
-                  <RankingCard
-                    key={ranking.rank}
-                    rank={ranking.rank}
-                    username={ranking.username}
-                    role={ranking.role}
-                    temperature={ranking.temperature}
-                    badges={ranking.badges}
-                  />
-                ))}
-              </div>
+              {isLoadingGroup ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : groupRankings.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {groupRankings.map((ranking: Ranking, index: number) => (
+                    <RankingCard
+                      key={`${ranking.username}-${index}`}
+                      rank={index + 1}
+                      username={ranking.username}
+                      role={ranking.role}
+                      temperature={ranking.temperature}
+                      badges={ranking.badges}
+                      commonAnswers={ranking.commonAnswers}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-12">
+                  {selectedDevGroup === "all"
+                    ? "아직 랭킹 데이터가 없습니다."
+                    : `${selectedDevGroup} 직군의 랭킹 데이터가 없습니다.`}
+                </p>
+              )}
             </Card>
           </TabsContent>
 
@@ -258,26 +319,38 @@ export default function RankingsPage() {
                 <Flame className="h-5 w-5 text-accent" />
                 누적 전체 랭킹
               </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {mockRankings.map((ranking) => (
-                  <RankingCard
-                    key={ranking.rank}
-                    rank={ranking.rank}
-                    username={ranking.username}
-                    role={ranking.role}
-                    temperature={ranking.temperature}
-                    badges={ranking.badges}
-                    commonAnswers={ranking.commonAnswers}
-                  />
-                ))}
-              </div>
+              {isLoadingAll ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : top3AllRankings.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {top3AllRankings.map((ranking: Ranking) => (
+                    <RankingCard
+                      key={ranking.rank}
+                      rank={ranking.rank}
+                      username={ranking.username}
+                      role={ranking.role}
+                      temperature={ranking.temperature}
+                      badges={ranking.badges}
+                      commonAnswers={ranking.commonAnswers}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-12">
+                  아직 랭킹 데이터가 없습니다.
+                </p>
+              )}
             </Card>
 
             <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
               <div className="space-y-4 mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Flame className="h-5 w-5 text-secondary" />
-                  누적 직군별 랭킹
+                  {selectedDevGroup === "all"
+                    ? "누적 직군별 랭킹"
+                    : `누적 ${selectedDevGroup} 랭킹`}
                 </h2>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
@@ -348,18 +421,31 @@ export default function RankingsPage() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-4">
-                {filteredByDevGroup.map((ranking) => (
-                  <RankingCard
-                    key={ranking.rank}
-                    rank={ranking.rank}
-                    username={ranking.username}
-                    role={ranking.role}
-                    temperature={ranking.temperature}
-                    badges={ranking.badges}
-                  />
-                ))}
-              </div>
+              {isLoadingGroup ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : groupRankings.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {groupRankings.map((ranking: Ranking, index: number) => (
+                    <RankingCard
+                      key={`${ranking.username}-${index}`}
+                      rank={index + 1}
+                      username={ranking.username}
+                      role={ranking.role}
+                      temperature={ranking.temperature}
+                      badges={ranking.badges}
+                      commonAnswers={ranking.commonAnswers}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-12">
+                  {selectedDevGroup === "all"
+                    ? "아직 랭킹 데이터가 없습니다."
+                    : `${selectedDevGroup} 직군의 랭킹 데이터가 없습니다.`}
+                </p>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

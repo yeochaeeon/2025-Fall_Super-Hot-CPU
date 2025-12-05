@@ -1,8 +1,57 @@
 @import "tailwindcss";
 
+/* Pretendard 폰트 로드 */
+@font-face {
+  font-family: "Pretendard";
+  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/PretendardVariable.woff2")
+    format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* SUIT 폰트 로드 */
+@font-face {
+  font-family: "SUIT";
+  src: url("https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SUIT";
+  src: url("https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-Medium.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SUIT";
+  src: url("https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-SemiBold.woff2")
+    format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SUIT";
+  src: url("https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+  --font-mono: "SUIT", "Pretendard", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
 
   /* Tailwind v4 color tokens mapping our design system */
   --color-background: hsl(var(--background));
@@ -50,7 +99,18 @@
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+}
+
+/* 영어 텍스트에 SUIT 폰트 적용 */
+[lang="en"],
+.english,
+code,
+pre,
+.mono {
+  font-family: "SUIT", "Pretendard", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
 }
 
 /* --- DevCPU 디자인 시스템 (기존 Vite index.css에서 마이그레이션) --- */
@@ -78,9 +138,9 @@ body {
     --muted: 0 0% 10%;
     --muted-foreground: 155 20% 65%;
 
-    /* Hot CPU color - orange/red */
-    --accent: 15 90% 60%;
-    --accent-foreground: 220 20% 6%;
+    /* Accent color - use primary green */
+    --accent: 155 85% 55%;
+    --accent-foreground: 155 50% 95%;
 
     --destructive: 0 85% 60%;
     --destructive-foreground: 155 50% 95%;
@@ -232,6 +292,27 @@ body {
   @keyframes scan {
     to {
       left: 100%;
+    }
+  }
+
+  .hover-glow {
+    transition: all 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.5),
+      0 0 40px hsl(var(--primary) / 0.3);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
     }
   }
 }

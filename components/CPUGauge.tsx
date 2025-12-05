@@ -67,7 +67,7 @@ export function CPUGauge({
         <div
           className={`absolute inset-0 flex items-center justify-center ${sizes.text} font-bold ${color.text} drop-shadow-[0_0_8px_rgba(0,0,0,0.8)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]`}
         >
-          {temperature}°C
+          {temperature % 1 === 0 ? temperature : temperature.toFixed(1)}°C
         </div>
       </div>
     </div>

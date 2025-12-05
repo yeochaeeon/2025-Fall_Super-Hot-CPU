@@ -13,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Laugh, Send, Upload, X } from "lucide-react";
+import { Laugh, Send, Upload, X, Loader2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
 
 export default function MemeNewPage() {
   const router = useRouter();
@@ -23,10 +24,23 @@ export default function MemeNewPage() {
   const [content, setContent] = useState("");
   const [devGroup, setDevGroup] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 파일 크기 검증 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "오류",
+          description: "이미지 크기는 5MB 이하여야 합니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -37,18 +51,87 @@ export default function MemeNewPage() {
 
   const handleRemoveImage = () => {
     setImagePreview(null);
+    setImageFile(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // TODO: Backend integration
-    console.log({
-      title,
-      content,
-      devGroup,
-      image: imagePreview ? "uploaded" : null,
-    });
-    router.push("/memes");
+
+    if (!title.trim() || !content.trim()) {
+      toast({
+        title: "오류",
+        description: "제목과 내용을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // 이미지 업로드 (있는 경우)
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", imageFile);
+
+        const uploadResponse = await fetch("/api/memes/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (uploadResponse.ok) {
+          imageUrl = uploadData.url;
+        } else {
+          toast({
+            title: "오류",
+            description: uploadData.error || "이미지 업로드에 실패했습니다.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const response = await fetch("/api/memes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          imageUrl,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "성공",
+          description: "밈이 등록되었습니다!",
+        });
+        router.push("/memes");
+      } else {
+        toast({
+          title: "오류",
+          description: data.error || "밈 등록에 실패했습니다.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Submit meme error:", error);
+      toast({
+        title: "오류",
+        description: "밈 등록 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,25 +147,6 @@ export default function MemeNewPage() {
 
         <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="devGroup" className="text-foreground">
-                직군 <span className="text-accent">*</span>
-              </Label>
-              <Select value={devGroup} onValueChange={setDevGroup} required>
-                <SelectTrigger
-                  id="devGroup"
-                  className="bg-muted/30 border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary"
-                >
-                  <SelectValue placeholder="직군을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-primary/20">
-                  <SelectItem value="Frontend">프론트엔드</SelectItem>
-                  <SelectItem value="Backend">백엔드</SelectItem>
-                  <SelectItem value="AI">AI</SelectItem>
-                  <SelectItem value="Mobile">모바일</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="title" className="text-foreground">
@@ -162,17 +226,31 @@ export default function MemeNewPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/questions")}
+                onClick={() => router.push("/memes")}
                 className="flex-1 border-primary/30 hover:bg-muted hover:text-primary"
+                disabled={isSubmitting}
               >
                 취소
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-black shadow-neon"
+                className="group relative flex-1 px-6 py-4 text-base font-semibold bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] text-white border-2 border-primary/50 shadow-neon hover:shadow-cpu transition-all duration-300 hover:scale-105 hover:-translate-y-1 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0"
+                disabled={isSubmitting}
               >
-                <Send className="h-4 w-4 mr-2" />
-                등록하기
+                <span className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                <span className="relative flex items-center justify-center gap-2">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      등록 중...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 group-hover:animate-pulse" />
+                      등록하기
+                    </>
+                  )}
+                </span>
               </Button>
             </div>
           </form>

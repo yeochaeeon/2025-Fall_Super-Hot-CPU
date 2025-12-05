@@ -59,7 +59,11 @@ export function RankingCard({
           <Crown className="h-7 w-7 text-amber-600 fill-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.5)]" />
         );
       default:
-        return <span className="text-2xl font-bold text-muted-foreground">#{rank}</span>;
+        return (
+          <span className="text-2xl font-bold text-muted-foreground">
+            #{rank}
+          </span>
+        );
     }
   };
 
@@ -96,17 +100,17 @@ export function RankingCard({
 
   return (
     <Card
-      className={`p-4 bg-card/50 backdrop-blur transition-all ${
+      className={`p-4 bg-card/50 backdrop-blur transition-all duration-300 ${
         isTopThree
-          ? "border-primary/50 shadow-neon hover:shadow-cpu"
-          : "border-primary/20 shadow-card hover:shadow-neon"
+          ? "border-primary/50 shadow-neon hover:shadow-cpu hover:scale-105 hover:-translate-y-1 animate-pulse-slow"
+          : "border-primary/20 shadow-card hover:shadow-neon hover:scale-[1.02] hover:-translate-y-0.5"
       }`}
     >
-      <div className="space-y-4">
+      <div className="flex flex-col justify-between space-y-4 h-full">
         {/* Rank and User Info */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex-shrink-0 flex items-center justify-center w-8">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-2">
+            <div className="flex-shrink-0 flex items-start justify-center w-8">
               {getRankIcon()}
             </div>
             <div className="flex-1 min-w-0">
@@ -128,9 +132,7 @@ export function RankingCard({
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/50 border border-primary/20"
                     >
                       <span className="text-xs">{badge.icon}</span>
-                      <span className="text-xs font-medium">
-                        {badge.name}
-                      </span>
+                      <span className="text-xs font-medium">{badge.name}</span>
                     </div>
                   ))}
                 </div>
@@ -168,4 +170,3 @@ export function RankingCard({
     </Card>
   );
 }
-

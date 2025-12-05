@@ -9,17 +9,55 @@ import { LogIn, User, Lock } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // TODO: Backend integration
-    console.log({ nickname, password });
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ nickname, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast({
+          title: "로그인 실패",
+          description: data.error || "로그인 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "로그인 성공",
+        description: `${data.user.nickname}님, 환영합니다!`,
+      });
+
     router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "로그인 실패",
+        description: "로그인 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -75,9 +113,10 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+                disabled={isLoading}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon disabled:opacity-50"
               >
-                로그인
+                {isLoading ? "로그인 중..." : "로그인"}
               </Button>
             </form>
 

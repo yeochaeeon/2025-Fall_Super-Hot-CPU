@@ -5,93 +5,258 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CPUGauge } from "@/components/CPUGauge";
-import { Thermometer, Calculator } from "lucide-react";
-import { FormEvent, useState } from "react";
+import {
+  Thermometer,
+  Calculator,
+  Loader2,
+  Info,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
 
-// 공통 질문 (50%)
-const commonQuestions = [
-  { id: "commits", label: "커밋 수", icon: "🤖", badge: "커밋 머신" },
-  { id: "coffee", label: "마신 커피 잔 수", icon: "☕", badge: "내 몸의 70%는 아메리카노" },
-  { id: "sleep", label: "수면 시간 (시간)", icon: "😴", badge: "슬기로운 불면생활" },
-  { id: "devTime", label: "개발 시간 (시간)", icon: "💺", badge: "엉덩이가 무거워" },
-];
-
-// 직군별 질문 (30%)
-const roleQuestions: Record<string, Array<{ id: string; label: string; icon: string; badge: string }>> = {
-  Frontend: [
-    { id: "pages", label: "페이지 구현 수", icon: "🎨", badge: "새 화면이 나를 부른다" },
-    { id: "apiConnections", label: "API 연동 개수", icon: "📡", badge: "백-프론트 통역사" },
-    { id: "uiChanges", label: "UI 변경으로 인한 코드 수정 건 수", icon: "🤯", badge: '"Figma 변경사항 확인해주세요" n번째 듣는 중' },
-    { id: "cssFixes", label: "CSS or 레이아웃 깨짐 수정 횟수", icon: "🧩", badge: "CSS가 왜 그럴까" },
-  ],
-  Backend: [
-    { id: "apiDesigns", label: "API 설계나 개발 개수", icon: "🛠️", badge: "JSON 상하차 중" },
-    { id: "deploy", label: "배포 여부", icon: "🔥", badge: "Release 지옥에서 날 꺼내줘" },
-    { id: "errorLogs", label: "에러 로그 수집된 건 수", icon: "🚨", badge: "버그 담당 일진" },
-    { id: "schemaChanges", label: "DB 스키마 변경 건 수", icon: "🛠️", badge: "ALTER TABLE 만능 노동자" },
-  ],
-  AI: [
-    { id: "epochs", label: "에포크 돌린 횟수", icon: "🥲", badge: "Loss 안 내려가서 눈물 흘리는 중" },
-    { id: "runtimeDisconnects", label: "'run time 연결이 끊어졌습니다' 발생 횟수", icon: "💻", badge: "Colab과 밀당 중" },
-    { id: "datasetSize", label: "모델 학습을 위해 확보/정제한 데이터셋 크기 (GB)", icon: "💀", badge: "라벨링 하다 영혼 가출" },
-    { id: "experimentChanges", label: "실험(run) 세팅 변경 횟수", icon: "💉", badge: "파라미터 튜닝 중독" },
-  ],
-  Mobile: [
-    { id: "buildRetries", label: "빌드 재시도 횟수", icon: "🔨", badge: "Gradle의 노예" },
-    { id: "pages", label: "페이지 구현 수", icon: "🔄", badge: "컴포넌트 복붙 기계" },
-    { id: "sdkIssues", label: "외부 SDK or dependency 문제 해결 시도 횟수", icon: "🔗", badge: "디펜던시 마스터" },
-    { id: "crashes", label: "로컬이나 실제 디바이스에서 크래시 발생 횟수", icon: "💔", badge: "앱은 죽었지만 난 살아있다" },
-  ],
-};
+interface Question {
+  questionId: number;
+  content: string;
+  category: string;
+  weightPercent: number;
+  badge: {
+    id: number;
+    name: string;
+    description: string;
+  } | null;
+  answerValue: number | null;
+}
 
 export default function MeasurePage() {
   const router = useRouter();
-  const [devGroup, setDevGroup] = useState("Frontend");
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [calculatedTemp, setCalculatedTemp] = useState<number | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [cpuScore, setCpuScore] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(false);
 
-  const handleAnswerChange = (questionId: string, value: string) => {
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const loadQuestions = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/measure/questions");
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "로그인 필요",
+            description: "로그인 후 이용해주세요.",
+            variant: "destructive",
+          });
+          router.push("/auth/login");
+          return;
+        }
+        throw new Error(data.error || "질문을 불러올 수 없습니다.");
+      }
+
+      setQuestions(data.questions);
+      setHasAnswered(data.hasAnswered);
+
+      // 이미 답변한 값이 있으면 answers에 설정
+      const existingAnswers: Record<number, number> = {};
+      data.questions.forEach((q: Question) => {
+        if (q.answerValue !== null) {
+          existingAnswers[q.questionId] = q.answerValue;
+        }
+      });
+      setAnswers(existingAnswers);
+
+      // 이미 답변했다면 점수도 가져오기
+      if (data.hasAnswered) {
+        loadScore();
+      }
+    } catch (error) {
+      console.error("Load questions error:", error);
+      toast({
+        title: "오류",
+        description: "질문을 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadScore = async () => {
+    try {
+      const response = await fetch("/api/measure/score");
+      const data = await response.json();
+
+      if (response.ok && data.hasScore) {
+        setCpuScore(data.cpuScore);
+      }
+    } catch (error) {
+      console.error("Load score error:", error);
+    }
+  };
+
+  const handleAnswerChange = (questionId: number, value: string) => {
+    // 빈 값이면 undefined로 설정 (답변 안 한 상태)
+    if (value === "" || value === null || value === undefined) {
+      setAnswers((prev) => {
+        const newAnswers = { ...prev };
+        delete newAnswers[questionId];
+        return newAnswers;
+      });
+      return;
+    }
+
+    // 숫자로 변환 (0도 유효한 답변)
+    const numValue = Math.max(0, Math.floor(parseFloat(value) || 0));
     setAnswers((prev) => ({
       ...prev,
-      [questionId]: value === "" ? 0 : parseInt(value) || 0,
+      [questionId]: numValue,
     }));
   };
 
-  const calculateTemperature = () => {
-    // 간단한 계산 로직 (실제로는 백엔드에서 계산)
-    let totalScore = 0;
-    
-    // 공통 질문 (50%)
-    const commonScore = Object.entries(answers)
-      .filter(([key]) => commonQuestions.some((q) => q.id === key))
-      .reduce((sum, [, value]) => sum + (value || 0), 0);
-    
-    // 직군별 질문 (30%)
-    const roleScore = Object.entries(answers)
-      .filter(([key]) => roleQuestions[devGroup]?.some((q) => q.id === key))
-      .reduce((sum, [, value]) => sum + (value || 0), 0);
-    
-    totalScore = commonScore * 0.5 + roleScore * 0.3;
-    
-    // 온도 변환 (0-100 스케일)
-    const temp = Math.min(100, Math.max(0, totalScore * 2));
-    setCalculatedTemp(Math.round(temp));
-  };
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    calculateTemperature();
-    // TODO: Backend integration
-    console.log({ devGroup, answers, temperature: calculatedTemp });
+
+    // 모든 질문에 답변이 입력되었는지 확인 (0도 유효한 답변)
+    const unansweredQuestions = questions.filter(
+      (q) =>
+        answers[q.questionId] === undefined || answers[q.questionId] === null
+    );
+
+    if (unansweredQuestions.length > 0 && !hasAnswered) {
+      toast({
+        title: "답변 필요",
+        description: "모든 질문에 답변해주세요. (0도 입력 가능합니다)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const answerArray = questions.map((q) => ({
+        questionId: q.questionId,
+        value: answers[q.questionId] !== undefined ? answers[q.questionId] : 0,
+      }));
+
+      const response = await fetch("/api/measure/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ answers: answerArray }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "답변 제출 중 오류가 발생했습니다.");
+      }
+
+      setCpuScore(data.cpuScore);
+      setHasAnswered(true);
+
+      // 성공 메시지 표시
+      toast({
+        title: "✅ CPU 온도 측정 완료!",
+        description: `오늘의 CPU 온도: ${(
+          Math.round(data.cpuScore * 10) / 10
+        ).toFixed(1)}°C${
+          data.badgesGranted > 0
+            ? ` 🎉 ${data.badgesGranted}개의 칭호를 획득했습니다!`
+            : ""
+        }`,
+      });
+
+      // 뱃지 정보도 다시 로드
+      loadScore();
+
+      // 성공 후 페이지 상단으로 스크롤
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      toast({
+        title: "오류",
+        description: error.message || "답변 제출 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const allQuestions = [
-    ...commonQuestions.map((q) => ({ ...q, type: "common" as const })),
-    ...(roleQuestions[devGroup] || []).map((q) => ({ ...q, type: "role" as const })),
-  ];
+  // 질문을 카테고리별로 분류
+  const commonQuestions = questions.filter((q) => q.category === "COMMON");
+  const roleQuestions = questions.filter((q) => q.category === "dev");
+  const specialQuestions = questions.filter((q) => q.category === "SPECIAL");
+
+  // 수면시간 질문인지 확인하는 헬퍼 함수
+  const isSleepTimeQuestion = (content: string) => content === "수면시간";
+
+  // 질문별 힌트 텍스트
+  const getQuestionHint = (content: string) => {
+    if (content === "수면시간") {
+      return "💡 수면시간이 적을수록 높은 CPU 온도가 기록됩니다";
+    } else if (content === "커밋 수") {
+      return "💡 오늘 커밋한 총 개수를 입력하세요";
+    } else if (content === "마신 커피 몇잔인지") {
+      return "💡 오늘 마신 커피 잔 수를 입력하세요";
+    } else if (content === "개발 시간") {
+      return "💡 오늘 개발에 투자한 시간(시간 단위)을 입력하세요";
+    }
+    return null;
+  };
+
+  // 뱃지 description에서 이모지 추출
+  const extractEmoji = (description: string | null): string => {
+    if (!description || description.trim().length === 0) {
+      return "🏆";
+    }
+    const desc = description.trim();
+    // codePointAt을 사용하여 서로게이트 페어 처리
+    const firstCodePoint = desc.codePointAt(0);
+    if (firstCodePoint) {
+      // 이모티콘 범위 체크
+      if (
+        (firstCodePoint >= 0x1f300 && firstCodePoint <= 0x1f9ff) || // Miscellaneous Symbols and Pictographs
+        (firstCodePoint >= 0x2600 && firstCodePoint <= 0x26ff) || // Miscellaneous Symbols
+        (firstCodePoint >= 0x2700 && firstCodePoint <= 0x27bf) || // Dingbats
+        (firstCodePoint >= 0x1f600 && firstCodePoint <= 0x1f64f) || // Emoticons
+        (firstCodePoint >= 0x1f680 && firstCodePoint <= 0x1f6ff) || // Transport and Map Symbols
+        (firstCodePoint >= 0x1f900 && firstCodePoint <= 0x1f9ff) || // Supplemental Symbols and Pictographs
+        (firstCodePoint >= 0x1fa00 && firstCodePoint <= 0x1faff) // Symbols and Pictographs Extended-A
+      ) {
+        // 서로게이트 페어인 경우 2자, 아니면 1자
+        return firstCodePoint > 0xffff
+          ? String.fromCodePoint(firstCodePoint)
+          : desc[0];
+      }
+    }
+    return "🏆";
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">질문을 불러오는 중...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -100,99 +265,241 @@ export default function MeasurePage() {
           <Thermometer className="h-8 w-8 text-primary animate-glow" />
           <div>
             <h1 className="text-3xl font-bold">CPU 온도 측정</h1>
-            <p className="text-muted-foreground">오늘의 개발 활동을 기록하세요</p>
+            <p className="text-muted-foreground">
+              오늘의 개발 활동을 기록하세요
+            </p>
           </div>
         </div>
 
+        {hasAnswered && cpuScore !== null && (
+          <Card className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/30 shadow-neon">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                <h3 className="text-lg font-semibold">✅ 측정 완료</h3>
+              </div>
+              <CPUGauge
+                temperature={Math.round(cpuScore * 10) / 10}
+                size="lg"
+              />
+              <p className="text-sm text-muted-foreground text-center">
+                오늘의 CPU 온도가 기록되었습니다.
+                <br />
+                <span className="text-xs">답변을 수정할 수 있습니다.</span>
+              </p>
+            </div>
+          </Card>
+        )}
+
         <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="devGroup" className="text-foreground">
-                직군 <span className="text-accent">*</span>
-              </Label>
-              <Select value={devGroup} onValueChange={setDevGroup} required>
-                <SelectTrigger
-                  id="devGroup"
-                  className="bg-muted/30 border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary"
-                >
-                  <SelectValue placeholder="직군을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-primary/20">
-                  <SelectItem value="Frontend">프론트엔드</SelectItem>
-                  <SelectItem value="Backend">백엔드</SelectItem>
-                  <SelectItem value="AI">AI</SelectItem>
-                  <SelectItem value="Mobile">모바일</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-6">
+            {commonQuestions.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <span>공통 질문</span>
                   <span className="text-xs text-muted-foreground">(50%)</span>
                 </h3>
-                <div className="space-y-4">
-                  {commonQuestions.map((question) => (
-                    <div key={question.id} className="space-y-2">
-                      <Label htmlFor={question.id} className="flex items-center gap-2">
-                        <span className="text-lg">{question.icon}</span>
-                        <span>{question.label}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          (칭호: {question.badge})
-                        </span>
-                      </Label>
-                      <Input
-                        id={question.id}
-                        type="number"
-                        min="0"
-                        value={answers[question.id] || ""}
-                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        placeholder="0"
-                        className="bg-muted/30 border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-6">
+                  {commonQuestions.map((question) => {
+                    const isSleepTime = isSleepTimeQuestion(question.content);
+                    const hint = getQuestionHint(question.content);
+                    return (
+                      <div
+                        key={question.questionId}
+                        className="space-y-3 p-4 rounded-lg bg-muted/20 border border-primary/10"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <Label
+                            htmlFor={`q-${question.questionId}`}
+                            className="flex items-center gap-2 flex-1"
+                          >
+                            <span className="font-semibold">
+                              {question.content}
+                            </span>
+                            {isSleepTime && (
+                              <TrendingDown className="h-4 w-4 text-orange-400" />
+                            )}
+                            {!isSleepTime && (
+                              <TrendingUp className="h-4 w-4 text-primary" />
+                            )}
+                            {question.badge && (
+                              <span className="text-xs text-muted-foreground ml-auto px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                                {extractEmoji(question.badge.description)}{" "}
+                                {question.badge.name}
+                              </span>
+                            )}
+                          </Label>
+                        </div>
+                        {hint && (
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded border border-primary/10">
+                            <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span>{hint}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <Input
+                            id={`q-${question.questionId}`}
+                            type="number"
+                            min="0"
+                            step={isSleepTime ? "0.5" : "1"}
+                            value={
+                              answers[question.questionId] !== undefined
+                                ? answers[question.questionId]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              handleAnswerChange(
+                                question.questionId,
+                                e.target.value
+                              )
+                            }
+                            placeholder={isSleepTime ? "예: 4.5" : "0"}
+                            className={`flex-1 bg-background border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 text-lg font-medium ${
+                              isSleepTime ? "text-orange-400" : ""
+                            }`}
+                          />
+                          {isSleepTime && (
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              시간
+                            </span>
+                          )}
+                          {question.content === "커밋 수" && (
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              개
+                            </span>
+                          )}
+                          {question.content === "마신 커피 몇잔인지" && (
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              잔
+                            </span>
+                          )}
+                          {question.content === "개발 시간" && (
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              시간
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
+            {roleQuestions.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <span>직군별 질문</span>
                   <span className="text-xs text-muted-foreground">(30%)</span>
                 </h3>
-                <div className="space-y-4">
-                  {(roleQuestions[devGroup] || []).map((question) => (
-                    <div key={question.id} className="space-y-2">
-                      <Label htmlFor={question.id} className="flex items-center gap-2">
-                        <span className="text-lg">{question.icon}</span>
-                        <span>{question.label}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          (칭호: {question.badge})
+                <div className="space-y-6">
+                  {roleQuestions.map((question) => (
+                    <div
+                      key={question.questionId}
+                      className="space-y-3 p-4 rounded-lg bg-muted/20 border border-primary/10"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <Label
+                          htmlFor={`q-${question.questionId}`}
+                          className="flex items-center gap-2 flex-1"
+                        >
+                          <span className="font-semibold">
+                            {question.content}
+                          </span>
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                          {question.badge && (
+                            <span className="text-xs text-muted-foreground ml-auto px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                              {extractEmoji(question.badge.description)}{" "}
+                              {question.badge.name}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          id={`q-${question.questionId}`}
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={
+                            answers[question.questionId] !== undefined
+                              ? answers[question.questionId]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            handleAnswerChange(
+                              question.questionId,
+                              e.target.value
+                            )
+                          }
+                          placeholder="0"
+                          className="flex-1 bg-background border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 text-lg font-medium"
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                          {question.content.includes("개수") ||
+                          question.content.includes("건")
+                            ? "개"
+                            : question.content.includes("횟수")
+                            ? "회"
+                            : question.content.includes("크기")
+                            ? "GB"
+                            : ""}
                         </span>
-                      </Label>
-                      <Input
-                        id={question.id}
-                        type="number"
-                        min="0"
-                        value={answers[question.id] || ""}
-                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        placeholder="0"
-                        className="bg-muted/30 border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary"
-                      />
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {calculatedTemp !== null && (
-              <Card className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/30">
-                <div className="flex flex-col items-center gap-4">
-                  <h3 className="text-lg font-semibold">오늘의 CPU 온도</h3>
-                  <CPUGauge temperature={calculatedTemp} size="lg" />
+            {specialQuestions.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <span>Hot Developer 질문</span>
+                  <span className="text-xs text-muted-foreground">(20%)</span>
+                </h3>
+                <div className="space-y-6">
+                  {specialQuestions.map((question) => (
+                    <div
+                      key={question.questionId}
+                      className="space-y-3 p-4 rounded-lg bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <Label
+                          htmlFor={`q-${question.questionId}`}
+                          className="flex items-center gap-2 flex-1"
+                        >
+                          <span className="font-semibold">
+                            {question.content}
+                          </span>
+                          <TrendingUp className="h-4 w-4 text-orange-400" />
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          id={`q-${question.questionId}`}
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={
+                            answers[question.questionId] !== undefined
+                              ? answers[question.questionId]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            handleAnswerChange(
+                              question.questionId,
+                              e.target.value
+                            )
+                          }
+                          placeholder="0"
+                          className="flex-1 bg-background border-orange-500/30 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-lg font-medium"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </Card>
+              </div>
             )}
 
             <div className="flex gap-3 pt-4">
@@ -201,31 +508,61 @@ export default function MeasurePage() {
                 variant="outline"
                 onClick={() => router.push("/")}
                 className="flex-1 border-primary/30 hover:bg-muted"
+                disabled={isSubmitting}
               >
                 취소
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon"
+                disabled={isSubmitting || questions.length === 0}
+                className="flex-1 bg-primary hover:bg-primary/90 text-black shadow-neon disabled:opacity-50"
               >
-                <Calculator className="h-4 w-4 mr-2" />
-                온도 측정하기
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    측정 중...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="h-4 w-4 mr-2" />
+                    온도 측정하기
+                  </>
+                )}
               </Button>
             </div>
           </form>
         </Card>
 
         <Card className="p-4 bg-muted/30 border-primary/10">
-          <h3 className="font-semibold mb-2 text-sm">📌 CPU 온도 측정 안내</h3>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• 매일 한 번만 측정할 수 있습니다</li>
-            <li>• 각 질문에 대한 답변값이 가장 높은 사람이 해당 칭호를 획득합니다</li>
-            <li>• 공통 질문은 50%, 직군별 질문은 30%의 가중치를 가집니다</li>
-            <li>• 나머지 20%는 Hot Developer가 선정한 특별 질문에 부여됩니다</li>
+          <h3 className="font-semibold mb-2 text-sm flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            CPU 온도 측정 안내
+          </h3>
+          <ul className="text-xs text-muted-foreground space-y-2">
+            <li>• 매일 한 번만 측정할 수 있습니다 (답변은 수정 가능)</li>
+            <li>
+              • <span className="font-semibold text-foreground">수면시간</span>
+              은 적을수록 높은 CPU 온도가 기록됩니다
+            </li>
+            <li>• 다른 질문들은 값이 클수록 높은 점수를 받습니다</li>
+            <li>
+              • 각 질문에서{" "}
+              <span className="font-semibold text-foreground">
+                최고값(또는 최저값)
+              </span>
+              을 기록한 사람이 해당 칭호를 획득합니다
+            </li>
+            <li>
+              • 공통 질문은 50%, 직군별 질문은 30%, Hot Developer 질문은 20%의
+              가중치를 가집니다
+            </li>
+            <li>
+              • 수면시간은 소수점 입력 가능 (예: 4.5시간), 나머지는 정수로
+              입력해주세요
+            </li>
           </ul>
         </Card>
       </div>
     </Layout>
   );
 }
-
