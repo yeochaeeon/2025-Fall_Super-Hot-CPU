@@ -195,7 +195,12 @@ export async function GET() {
     const devGroupMap = new Map(devGroups.map(dg => [dg.dev_group_id, dg]));
 
     // 직군별로 답변 그룹핑
-    const answersByDevGroup: Record<number, typeof allTodayAnswers> = {};
+    type AnswerType = {
+      question: { content: string };
+      answer_value: any;
+      user: { dev_group_id: number };
+    };
+    const answersByDevGroup: Record<number, AnswerType[]> = {};
     for (const answer of allTodayAnswers) {
       const devGroupId = answer.user.dev_group_id;
       if (!answersByDevGroup[devGroupId]) {
