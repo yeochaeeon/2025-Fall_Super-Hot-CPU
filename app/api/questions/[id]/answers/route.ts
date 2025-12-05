@@ -98,6 +98,14 @@ export async function POST(
         content: content.trim(),
         is_accepted: false,
       },
+      include: {
+        user: {
+          include: {
+            dev_group: true,
+            role: true,
+          },
+        },
+      },
     });
 
     // 답변 작성자의 total_answers 증가
@@ -106,15 +114,6 @@ export async function POST(
       data: {
         total_answers: {
           increment: 1,
-        },
-      },
-    });
-      include: {
-        user: {
-          include: {
-            dev_group: true,
-            role: true,
-          },
         },
       },
     });
