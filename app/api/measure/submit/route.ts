@@ -90,15 +90,19 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 답변이 있는 고민만 필터링 (한 번만 판별)
-      const unacceptedConcerns = concernsWithUnacceptedAnswers
-        .filter((concern) => concern.answer.length > 0)
-        .map((concern) => concern.title);
+      // 답변이 있는 고민이 있는지 확인
+      const hasUnacceptedAnswers = concernsWithUnacceptedAnswers.some(
+        (concern) => concern.answer.length > 0
+      );
 
-      if (unacceptedConcerns.length > 0) {
+      if (hasUnacceptedAnswers) {
+        const unacceptedConcerns = concernsWithUnacceptedAnswers
+          .filter((concern) => concern.answer.length > 0)
+          .map((concern) => concern.title);
+
         return NextResponse.json(
           {
-            error: `답변을 채택해야 CPU 온도를 측정할 수 있습니다. 채택하지 않은 고민이 ${unacceptedConcerns.length}개 있습니다.`,
+            error: `답변을 채택해야 CPU 온도를 측정할 수 있습니다. \n채택하지 않은 고민이 ${unacceptedConcerns.length}개 있습니다.`,
             requiresAcceptance: true,
             unacceptedConcerns: unacceptedConcerns,
           },

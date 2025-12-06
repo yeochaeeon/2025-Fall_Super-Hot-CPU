@@ -48,25 +48,30 @@ export async function POST(request: NextRequest) {
       console.error("Supabase upload error:", error);
       console.error("Error details:", {
         message: error.message,
-        statusCode: error.statusCode,
-        error: error.error,
+        name: error.name,
       });
       
       // 더 구체적인 에러 메시지 반환
       let errorMessage = "이미지 업로드에 실패했습니다.";
-      if (error.statusCode === 413 || error.message?.includes("exceeded the maximum allowed size")) {
+      let statusCode = 500;
+      
+      // 에러 메시지로 상태 코드 추정
+      if (error.message?.includes("exceeded the maximum allowed size") || error.message?.includes("413")) {
         errorMessage = "파일 크기가 너무 큽니다. 5MB 이하의 이미지를 업로드해주세요.";
+        statusCode = 413;
       } else if (error.message?.includes("Bucket not found")) {
         errorMessage = "저장소 버킷을 찾을 수 없습니다. 관리자에게 문의하세요.";
+        statusCode = 500;
       } else if (error.message?.includes("new row violates row-level security")) {
         errorMessage = "업로드 권한이 없습니다. 관리자에게 문의하세요.";
+        statusCode = 403;
       } else if (error.message) {
         errorMessage = `이미지 업로드 실패: ${error.message}`;
       }
       
       return NextResponse.json(
         { error: errorMessage },
-        { status: error.statusCode === 413 ? 413 : 500 }
+        { status: statusCode }
       );
     }
 

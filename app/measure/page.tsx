@@ -13,6 +13,7 @@ import {
   Info,
   TrendingUp,
   TrendingDown,
+  Settings,
 } from "lucide-react";
 import { FormEvent, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -39,14 +40,28 @@ export default function MeasurePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     // 중복 호출 방지
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
+    loadUserRole();
     loadQuestions();
   }, []);
+
+  const loadUserRole = async () => {
+    try {
+      const response = await fetch("/api/auth/check");
+      const data = await response.json();
+      if (data.authenticated && data.user) {
+        setUserRole(data.user.role);
+      }
+    } catch (error) {
+      console.error("Load user role error:", error);
+    }
+  };
 
   const loadQuestions = async () => {
     try {
