@@ -38,6 +38,12 @@ export default function LoginPage() {
           description: data.error || "로그인 중 오류가 발생했습니다.",
           variant: "destructive",
         });
+        
+        // 401 에러 시 alert 표시
+        if (response.status === 401) {
+          alert("회원 정보를 확인해주세요.");
+        }
+        
         return;
       }
 
