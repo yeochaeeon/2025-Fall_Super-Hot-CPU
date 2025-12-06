@@ -127,6 +127,9 @@ export default function MemesPage() {
               : meme
           )
         );
+      } else if (response.status === 403) {
+        // 일일 좋아요 제한 초과
+        alert("일일 좋아요 등록 가능 개수를 초과했습니다.");
       }
     } catch (error) {
       console.error("Like meme error:", error);
