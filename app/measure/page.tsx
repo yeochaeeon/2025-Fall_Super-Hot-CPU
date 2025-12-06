@@ -115,7 +115,7 @@ export default function MeasurePage() {
     }
   };
 
-  const handleAnswerChange = (questionId: number, value: string) => {
+  const handleAnswerChange = (questionId: number, value: string, questionContent?: string) => {
     // 빈 값이면 undefined로 설정 (답변 안 한 상태)
     if (value === "" || value === null || value === undefined) {
       setAnswers((prev) => {
@@ -123,6 +123,24 @@ export default function MeasurePage() {
         delete newAnswers[questionId];
         return newAnswers;
       });
+      return;
+    }
+
+    // 배포 여부 질문인 경우 0 또는 1로 제한
+    if (questionContent?.includes("배포 여부")) {
+      const numValue = Math.floor(parseFloat(value) || 0);
+      if (numValue < 0 || numValue > 1) {
+        toast({
+          title: "입력 오류",
+          description: "배포 여부는 0 또는 1만 입력 가능합니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setAnswers((prev) => ({
+        ...prev,
+        [questionId]: numValue,
+      }));
       return;
     }
 
@@ -441,7 +459,8 @@ export default function MeasurePage() {
                         <Input
                           id={`q-${question.questionId}`}
                           type="number"
-                          min="0"
+                          min={question.content.includes("배포 여부") ? "0" : "0"}
+                          max={question.content.includes("배포 여부") ? "1" : undefined}
                           step="1"
                           value={
                             answers[question.questionId] !== undefined
@@ -451,10 +470,11 @@ export default function MeasurePage() {
                           onChange={(e) =>
                             handleAnswerChange(
                               question.questionId,
-                              e.target.value
+                              e.target.value,
+                              question.content
                             )
                           }
-                          placeholder="0"
+                          placeholder={question.content.includes("배포 여부") ? "0 또는 1" : "0"}
                           className="flex-1 bg-background border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 text-lg font-medium"
                         />
                         <span className="text-sm text-muted-foreground whitespace-nowrap">
