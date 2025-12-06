@@ -8,12 +8,14 @@ export async function GET() {
     const userId = cookieStore.get("user_id")?.value;
     const userIdInt = userId ? parseInt(userId) : null;
 
-    // 타임존 문제를 피하기 위해 UTC 기준으로 오늘 날짜 생성
+    // 한국 시간(KST, UTC+9) 기준으로 오늘 날짜 생성
     const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
     const today = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth(),
+      kstNow.getUTCDate()
     ));
 
     // 모든 쿼리를 병렬로 실행

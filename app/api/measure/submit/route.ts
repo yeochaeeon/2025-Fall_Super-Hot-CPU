@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       where: { user_id: parseInt(userId) },
       include: {
         dev_group: true,
+        role: true,
       },
     });
 
@@ -38,12 +39,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 타임존 문제를 피하기 위해 UTC 기준으로 오늘 날짜 생성
-    // Prisma는 Date를 UTC로 저장하므로, UTC 기준으로 날짜를 생성해야 함
+    // 한국 시간(KST, UTC+9) 기준으로 오늘 날짜 생성
+    // Prisma는 Date를 UTC로 저장하므로, 한국 시간 기준으로 날짜를 계산한 후 UTC로 변환
     const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
     const todayDateOnly = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+      Date.UTC(
+        kstNow.getUTCFullYear(),
+        kstNow.getUTCMonth(),
+        kstNow.getUTCDate()
+      )
     );
+
+    // Hot Developer는 당일 점수 측정 불가 (오늘 선정된 경우만)
+    if (user.role.name === "Hot Developer") {
+      // 오늘 Hot Developer로 선정되었는지 확인
+      const hotDevRecord = await prisma.hot_developer.findUnique({
+        where: {
+          dev_group_id_effective_date: {
+            dev_group_id: user.dev_group_id,
+            effective_date: todayDateOnly,
+          },
+        },
+      });
+
+      if (hotDevRecord && hotDevRecord.user_id === user.user_id) {
+        return NextResponse.json(
+          {
+            error: "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+            isHotDeveloper: true,
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // 트랜잭션 밖에서 먼저 질문 정보와 최대값 조회 (트랜잭션 타임아웃 방지)
     const questionIds = answers.map(

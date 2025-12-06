@@ -18,6 +18,7 @@ export async function GET() {
       where: { user_id: parseInt(userId) },
       include: {
         dev_group: true,
+        role: true,
       },
     });
 
@@ -28,13 +29,40 @@ export async function GET() {
       );
     }
 
-    // 타임존 문제를 피하기 위해 UTC 기준으로 오늘 날짜 생성
+    // 한국 시간(KST, UTC+9) 기준으로 오늘 날짜 생성
     const now = new Date();
-    const today = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
-    ));
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(
+      Date.UTC(
+        kstNow.getUTCFullYear(),
+        kstNow.getUTCMonth(),
+        kstNow.getUTCDate()
+      )
+    );
+
+    // Hot Developer는 당일 점수 측정 불가 (오늘 선정된 경우만)
+    if (user.role.name === "Hot Developer") {
+      // 오늘 Hot Developer로 선정되었는지 확인
+      const hotDevRecord = await prisma.hot_developer.findUnique({
+        where: {
+          dev_group_id_effective_date: {
+            dev_group_id: user.dev_group_id,
+            effective_date: today,
+          },
+        },
+      });
+
+      if (hotDevRecord && hotDevRecord.user_id === user.user_id) {
+        return NextResponse.json(
+          {
+            error: "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+            isHotDeveloper: true,
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // 공통 질문 4개 (COMMON)
     const commonQuestions = await prisma.question.findMany({
@@ -66,9 +94,12 @@ export async function GET() {
     });
 
     // Hot Developer 질문 2개 (SPECIAL)
-    const specialQuestions = await prisma.question.findMany({
+    // 해당 직군의 Hot Developer가 선정한 질문 조회
+    // 먼저 해당 직군의 질문이 있는지 확인하고, 있으면 그것만 가져오고, 없으면 기본 질문(NULL) 가져오기
+    let specialQuestions = await prisma.question.findMany({
       where: {
         category: "SPECIAL",
+        dev_group_id: user.dev_group_id, // 해당 직군이 선정한 질문
         is_active: true,
       },
       include: {
@@ -79,6 +110,25 @@ export async function GET() {
       },
       take: 2,
     });
+
+    // 해당 직군의 질문이 없거나 2개 미만이면 기본 질문(NULL) 가져오기
+    if (specialQuestions.length < 2) {
+      const defaultQuestions = await prisma.question.findMany({
+        where: {
+          category: "SPECIAL",
+          dev_group_id: null, // 아직 선정되지 않은 기본 질문
+          is_active: true,
+        },
+        include: {
+          badge: true,
+        },
+        orderBy: {
+          question_id: "asc",
+        },
+        take: 2 - specialQuestions.length, // 부족한 개수만큼만 가져오기
+      });
+      specialQuestions = [...specialQuestions, ...defaultQuestions];
+    }
 
     // 오늘 이미 답변한 질문들 확인
     const existingAnswers = await prisma.daily_answer.findMany({
@@ -156,6 +206,3 @@ export async function GET() {
     );
   }
 }
-
-
-

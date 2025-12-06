@@ -72,11 +72,30 @@ export default function HomePage() {
   const [recentQuestions, setRecentQuestions] = useState<RecentQuestion[]>([]);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [likingMemeId, setLikingMemeId] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isHotDeveloperToday, setIsHotDeveloperToday] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
+    loadUserInfo();
     loadMyScore();
     loadDashboardSummary();
   }, []);
+
+  const loadUserInfo = async () => {
+    try {
+      const response = await fetch("/api/auth/check");
+      const data = await response.json();
+      if (data.authenticated && data.user) {
+        setUserRole(data.user.role);
+        setIsHotDeveloperToday(data.user.isHotDeveloperToday || false);
+      }
+    } catch (error) {
+      console.error("Load user info error:", error);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
 
   const loadMyScore = async () => {
     try {
@@ -166,7 +185,37 @@ export default function HomePage() {
               오늘의 개발 몰입도가 곧 레벨이 되는 공간
             </p>
             <div className="flex flex-col items-center justify-center gap-4 pt-4">
-              {isLoadingScore ? (
+              {!isLoadingUser &&
+              userRole === "Hot Developer" &&
+              isHotDeveloperToday ? (
+                <div className="w-full max-w-md space-y-4">
+                  <Card className="p-6 bg-gradient-to-br from-orange-500/20 to-red-500/20 border-2 border-orange-500/50">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center">
+                        <Flame className="h-6 w-6 text-orange-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-orange-400 mb-2">
+                          🔥 Hot Developer 선정!
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          축하합니다! 어제 직군 내 최고 CPU 온도를 기록하여 Hot
+                          Developer로 선정되었습니다.
+                        </p>
+                        <p className="text-sm text-orange-300 mt-2 font-medium">
+                          ⚠️ Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Link href="/hot-developer/select">
+                    <Button className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white">
+                      <Flame className="h-4 w-4 mr-2" />
+                      특별 질문 선정하기
+                    </Button>
+                  </Link>
+                </div>
+              ) : isLoadingScore ? (
                 <div className="text-muted-foreground">로딩 중...</div>
               ) : myCpuScore !== null ? (
                 <>

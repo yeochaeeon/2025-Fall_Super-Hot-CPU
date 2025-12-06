@@ -60,6 +60,17 @@ export default function MeasurePage() {
           router.push("/auth/login");
           return;
         }
+        if (response.status === 403 && data.isHotDeveloper) {
+          toast({
+            title: "측정 불가",
+            description:
+              data.error ||
+              "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+            variant: "destructive",
+          });
+          router.push("/");
+          return;
+        }
         throw new Error(data.error || "질문을 불러올 수 없습니다.");
       }
 
@@ -160,6 +171,17 @@ export default function MeasurePage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403 && data.isHotDeveloper) {
+          toast({
+            title: "측정 불가",
+            description:
+              data.error ||
+              "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+            variant: "destructive",
+          });
+          router.push("/");
+          return;
+        }
         throw new Error(data.error || "답변 제출 중 오류가 발생했습니다.");
       }
 

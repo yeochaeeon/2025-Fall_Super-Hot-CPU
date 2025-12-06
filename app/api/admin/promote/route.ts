@@ -21,21 +21,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // UTC 기준으로 어제와 오늘 계산
+    // 한국 시간(KST, UTC+9) 기준으로 어제와 오늘 계산
     const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
     const yesterday = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() - 1
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth(),
+      kstNow.getUTCDate() - 1
     ));
     const today = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth(),
+      kstNow.getUTCDate()
     ));
 
     // 디버깅: 날짜 확인
-    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000); // UTC+9 (한국 시간)
     console.log("=== Promotion API 실행 ===");
     console.log("현재 시간 (UTC):", now.toISOString());
     console.log("현재 시간 (KST):", kstNow.toISOString().replace("T", " ").substring(0, 19) + " KST");
@@ -93,16 +94,45 @@ export async function POST(request: Request) {
       });
       
       console.log(`Found ${allScores.length} scores for dev group ${devGroup.name} on ${yesterdayDateOnly.toISOString().split("T")[0]}`);
+      console.log(`  Query date: ${yesterdayDateOnly.toISOString()}`);
       if (allScores.length > 0) {
         console.log(`Top scores:`, allScores.slice(0, 3).map(s => ({
           userId: s.user_id,
           nickname: s.user.nickname,
-          score: s.cpu_score
+          score: s.cpu_score,
+          scoreDate: s.score_date?.toISOString().split("T")[0]
         })));
       } else {
         // 점수가 없어도 로그 출력
         console.log(`⚠️ No scores found for dev group ${devGroup.name} on ${yesterdayDateOnly.toISOString().split("T")[0]}`);
         console.log(`   This means no one in ${devGroup.name} measured their CPU temperature yesterday.`);
+        console.log(`   Checking if there are any scores in the database for this dev group...`);
+        // 디버깅: 해당 직군의 모든 최근 점수 확인
+        const recentScores = await prisma.daily_score.findMany({
+          where: {
+            user: {
+              dev_group_id: devGroup.dev_group_id,
+            },
+          },
+          orderBy: {
+            score_date: "desc",
+          },
+          take: 5,
+          select: {
+            score_date: true,
+            cpu_score: true,
+            user: {
+              select: {
+                nickname: true,
+              },
+            },
+          },
+        });
+        console.log(`   Recent scores for ${devGroup.name}:`, recentScores.map(s => ({
+          date: s.score_date?.toISOString().split("T")[0],
+          score: s.cpu_score,
+          user: s.user.nickname
+        })));
         continue;
       }
       
@@ -143,8 +173,6 @@ export async function POST(request: Request) {
       });
       
       console.log(`  Found ${allTopUsers.length} users with top score ${topScore.cpu_score} in ${devGroup.name}`);
-
-      console.log(`  Found ${allTopUsers.length} users with top score ${topScoreValue} in ${devGroup.name}`);
 
       // 동점자가 있으면 전날 CPU 온도를 먼저 측정한 사용자 우선 선정
       // (daily_answer의 created_at 기준으로 정렬)
@@ -193,31 +221,90 @@ export async function POST(request: Request) {
           user_id: hotDevRecord.user_id,
         });
 
-        // Hot Developer 역할로 변경 (role_id = 3)
+        // 기존 Hot Developer 역할 조회
         const hotDeveloperRole = await prisma.role.findUnique({
           where: { name: "Hot Developer" },
         });
+        const developerRole = await prisma.role.findUnique({
+          where: { name: "Developer" },
+        });
 
-        if (hotDeveloperRole) {
-          await prisma.users.update({
-            where: { user_id: topUser.user_id },
-            data: {
-              role_id: hotDeveloperRole.role_id,
-              hot_dev_count: {
-                increment: 1,
+        if (!hotDeveloperRole || !developerRole) {
+          console.error("Hot Developer or Developer role not found in database!");
+          continue;
+        }
+
+        // 기존 Hot Developer 찾기 (어제 선정된 사용자)
+        const previousHotDev = await prisma.hot_developer.findUnique({
+          where: {
+            dev_group_id_effective_date: {
+              dev_group_id: devGroup.dev_group_id,
+              effective_date: yesterday,
+            },
+          },
+          include: {
+            user: {
+              include: {
+                role: true,
+                user_badge: true,
               },
+            },
+          },
+        });
+
+        // 기존 Hot Developer가 있으면 역할 처리
+        if (previousHotDev && previousHotDev.user_id !== topUser.user_id) {
+          const previousUser = previousHotDev.user;
+          console.log(`Processing previous Hot Developer: ${previousUser.nickname} (id: ${previousUser.user_id})`);
+
+          // 승급 조건 체크
+          let shouldPromote = false;
+          let newRoleId = developerRole.role_id;
+
+          // Optimizer 승급 체크 (Hot Developer 10회 + 칭호 5개)
+          const uniqueBadgeCount = new Set(
+            previousUser.user_badge.map((ub) => ub.badge_id)
+          ).size;
+
+          if (previousUser.hot_dev_count >= 10 && uniqueBadgeCount >= 5) {
+            const optimizerRole = await prisma.role.findUnique({
+              where: { name: "Optimizer" },
+            });
+            if (optimizerRole) {
+              shouldPromote = true;
+              newRoleId = optimizerRole.role_id;
+              console.log(`  → Promoting ${previousUser.nickname} to Optimizer`);
+            }
+          }
+
+          // 역할 변경
+          await prisma.users.update({
+            where: { user_id: previousUser.user_id },
+            data: {
+              role_id: newRoleId,
             },
           });
 
-          console.log(`Updated user ${topUser.nickname} to Hot Developer role`);
-          results.hotDevelopers.push({
-            userId: topUser.user_id,
-            nickname: topUser.nickname,
-            devGroup: devGroup.name,
-          });
-        } else {
-          console.error("Hot Developer role not found in database!");
+          console.log(`  → Updated ${previousUser.nickname} role from Hot Developer to ${shouldPromote ? "Optimizer" : "Developer"}`);
         }
+
+        // 새로운 Hot Developer 역할로 변경
+        await prisma.users.update({
+          where: { user_id: topUser.user_id },
+          data: {
+            role_id: hotDeveloperRole.role_id,
+            hot_dev_count: {
+              increment: 1,
+            },
+          },
+        });
+
+        console.log(`Updated user ${topUser.nickname} to Hot Developer role`);
+        results.hotDevelopers.push({
+          userId: topUser.user_id,
+          nickname: topUser.nickname,
+          devGroup: devGroup.name,
+        });
       }
     }
 
@@ -344,6 +431,21 @@ export async function POST(request: Request) {
           });
         }
       }
+    }
+
+    // 5. 어제 받은 배지 자동 삭제 (선택사항: 데이터베이스 정리)
+    // 배지는 하루만 유효하므로, 어제 배지를 삭제하여 데이터베이스 정리
+    const yesterdayDateOnly = yesterday;
+    const deletedBadgesCount = await prisma.user_badge.deleteMany({
+      where: {
+        granted_date: {
+          lt: today, // 오늘 이전의 모든 배지 삭제
+        },
+      },
+    });
+
+    if (deletedBadgesCount.count > 0) {
+      console.log(`🗑️ Deleted ${deletedBadgesCount.count} expired badges from ${yesterdayDateOnly.toISOString().split("T")[0]}`);
     }
 
     return NextResponse.json(

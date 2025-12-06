@@ -14,13 +14,17 @@ export async function GET() {
       );
     }
 
-    // 타임존 문제를 피하기 위해 UTC 기준으로 오늘 날짜 생성
+    // 한국 시간(KST, UTC+9) 기준으로 오늘 날짜 생성
     const now = new Date();
-    const today = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
-    ));
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(
+      Date.UTC(
+        kstNow.getUTCFullYear(),
+        kstNow.getUTCMonth(),
+        kstNow.getUTCDate()
+      )
+    );
 
     // daily_score와 daily_answer 모두 확인 (답변이 있으면 측정한 것으로 간주)
     const [score, answers] = await Promise.all([
@@ -40,11 +44,13 @@ export async function GET() {
       }),
     ]);
 
-    // 답변이 있으면 측정한 것으로 간주 (점수가 없어도)
+    // 답변이 있으면 측정한 것으로 간주
     const hasAnswered = !!answers;
+    // 점수가 실제로 있는지 확인 (daily_score 테이블에 기록이 있어야 함)
     const hasScore = !!score;
 
-    if (!hasAnswered && !hasScore) {
+    // 점수가 없으면 측정하지 않은 것으로 간주
+    if (!hasScore) {
       return NextResponse.json(
         {
           hasScore: false,
@@ -76,8 +82,8 @@ export async function GET() {
       },
     });
 
-    // 점수가 있으면 점수 사용, 없으면 답변만 있는 경우 0으로 표시
-    const cpuScore = score ? Number(score.cpu_score) : 0;
+    // 점수가 있으면 점수 사용
+    const cpuScore = Number(score.cpu_score);
 
     return NextResponse.json(
       {
@@ -101,6 +107,3 @@ export async function GET() {
     );
   }
 }
-
-
-

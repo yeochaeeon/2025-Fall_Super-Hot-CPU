@@ -11,6 +11,18 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { status: 200 });
     }
 
+    // 한국 시간(KST, UTC+9) 기준으로 오늘 날짜 생성
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (밀리초)
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(
+      Date.UTC(
+        kstNow.getUTCFullYear(),
+        kstNow.getUTCMonth(),
+        kstNow.getUTCDate()
+      )
+    );
+
     const user = await prisma.users.findUnique({
       where: { user_id: parseInt(userId) },
       select: {
@@ -38,6 +50,21 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { status: 200 });
     }
 
+    // Hot Developer인 경우, 오늘 선정되었는지 확인
+    let isHotDeveloperToday = false;
+    if (user.role.name === "Hot Developer") {
+      const hotDevRecord = await prisma.hot_developer.findUnique({
+        where: {
+          dev_group_id_effective_date: {
+            dev_group_id: user.dev_group_id,
+            effective_date: today,
+          },
+        },
+      });
+      isHotDeveloperToday =
+        !!hotDevRecord && hotDevRecord.user_id === user.user_id;
+    }
+
     return NextResponse.json(
       {
         authenticated: true,
@@ -48,6 +75,7 @@ export async function GET() {
           devGroupId: user.dev_group_id,
           role: user.role.name,
           roleId: user.role_id,
+          isHotDeveloperToday, // 오늘 Hot Developer로 선정되었는지 여부
         },
       },
       { status: 200 }
@@ -57,6 +85,3 @@ export async function GET() {
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 }
-
-
-
