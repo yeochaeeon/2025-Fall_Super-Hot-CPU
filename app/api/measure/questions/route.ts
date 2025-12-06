@@ -96,6 +96,7 @@ export async function GET() {
     // Hot Developer 질문 2개 (SPECIAL)
     // 해당 직군의 Hot Developer가 선정한 질문 조회
     // 먼저 해당 직군의 질문이 있는지 확인하고, 있으면 그것만 가져오고, 없으면 기본 질문(NULL) 가져오기
+    // 최근에 등록된 2개만 가져오기 (question_id 내림차순)
     let specialQuestions = await prisma.question.findMany({
       where: {
         category: "SPECIAL",
@@ -106,12 +107,13 @@ export async function GET() {
         badge: true,
       },
       orderBy: {
-        question_id: "asc",
+        question_id: "desc", // 최근에 등록된 것부터 (큰 question_id가 최신)
       },
-      take: 2,
+      take: 2, // 최근 2개만
     });
 
     // 해당 직군의 질문이 없거나 2개 미만이면 기본 질문(NULL) 가져오기
+    // 기본 질문도 최근에 등록된 것부터 가져오기
     if (specialQuestions.length < 2) {
       const defaultQuestions = await prisma.question.findMany({
         where: {
@@ -123,7 +125,7 @@ export async function GET() {
           badge: true,
         },
         orderBy: {
-          question_id: "asc",
+          question_id: "desc", // 최근에 등록된 것부터
         },
         take: 2 - specialQuestions.length, // 부족한 개수만큼만 가져오기
       });
