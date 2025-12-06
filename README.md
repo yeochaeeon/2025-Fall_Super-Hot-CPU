@@ -77,4 +77,5 @@ git clone https://github.com/yeochaeeon/2025-Fall_Super-Hot-CPU.git
 npm install
 
 # Start Server
-npm start
+npm run dev
+
