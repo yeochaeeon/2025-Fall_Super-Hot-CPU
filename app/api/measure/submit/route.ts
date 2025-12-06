@@ -75,6 +75,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Developer의 답변 채택 의무 확인
+    // Developer, Hot Developer, Root는 고민을 등록할 수 있고, 답변이 있으면 채택해야 함
+    const rolesRequiringAcceptance = ["Developer", "Hot Developer", "Root"];
+    if (rolesRequiringAcceptance.includes(user.role.name)) {
+      // 사용자가 등록한 고민 중에서 답변이 있는데 채택하지 않은 고민 확인
+      const concernsWithUnacceptedAnswers = await prisma.concern.findMany({
+        where: {
+          user_id: user.user_id,
+          was_good: null, // 아직 채택/비채택 결정을 하지 않음
+        },
+        include: {
+          answer: true, // 답변 목록 포함
+        },
+      });
+
+      // 답변이 있는 고민만 필터링 (한 번만 판별)
+      const unacceptedConcerns = concernsWithUnacceptedAnswers
+        .filter((concern) => concern.answer.length > 0)
+        .map((concern) => concern.title);
+
+      if (unacceptedConcerns.length > 0) {
+        return NextResponse.json(
+          {
+            error: `답변을 채택해야 CPU 온도를 측정할 수 있습니다. 채택하지 않은 고민이 ${unacceptedConcerns.length}개 있습니다.`,
+            requiresAcceptance: true,
+            unacceptedConcerns: unacceptedConcerns,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // 트랜잭션 밖에서 먼저 질문 정보와 최대값 조회 (트랜잭션 타임아웃 방지)
     const questionIds = answers.map(
       (a: { questionId: number }) => a.questionId

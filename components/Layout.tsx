@@ -119,7 +119,7 @@ export function Layout({ children }: LayoutProps) {
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-primary">
                 <Flame className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-primary text-gradient">
+              <span className="text-xl font-bold gradient-primary text-gradient hidden md:inline">
                 Who's the SUPER HOT CPU?
               </span>
             </Link>
@@ -137,14 +137,16 @@ export function Layout({ children }: LayoutProps) {
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                      "px-2 py-2 sm:px-4",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
+                    title={item.name}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden sm:inline">{item.name}</span>
+                    <Icon className="h-5 w-5 sm:h-4 sm:w-4" />
+                    <span className="hidden lg:inline">{item.name}</span>
                   </Link>
                 );
               })}

@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 
@@ -39,8 +39,12 @@ export default function MeasurePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
+    // 중복 호출 방지
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
     loadQuestions();
   }, []);
 
@@ -48,9 +52,26 @@ export default function MeasurePage() {
     try {
       setIsLoading(true);
       const response = await fetch("/api/measure/questions");
-      const data = await response.json();
+      
+      // 응답이 JSON인지 확인
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        const text = await response.text();
+        console.error("Response text:", text);
+        toast({
+          title: "오류",
+          description: "서버 응답을 처리할 수 없습니다.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       if (!response.ok) {
+        console.log("Response not OK:", response.status, data);
         if (response.status === 401) {
           toast({
             title: "로그인 필요",
@@ -60,15 +81,38 @@ export default function MeasurePage() {
           router.push("/auth/login");
           return;
         }
-        if (response.status === 403 && data.isHotDeveloper) {
+        if (response.status === 403) {
+          console.log("403 error data:", data);
+          if (data.isHotDeveloper) {
+            toast({
+              title: "측정 불가",
+              description:
+                data.error ||
+                "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+              variant: "destructive",
+            });
+            router.push("/");
+            return;
+          }
+          if (data.requiresAcceptance) {
+            console.log("requiresAcceptance:", data.requiresAcceptance);
+            const errorMessage = data.error || "답변을 채택해야 CPU 온도를 측정할 수 있습니다.";
+            toast({
+              title: "답변 채택 필요",
+              description: errorMessage,
+              variant: "destructive",
+            });
+            // alert로 사용자에게 명확히 알리고 확인 후 이동
+            alert(errorMessage);
+            router.push("/questions");
+            return;
+          }
+          // 403 에러인데 위 조건에 해당하지 않는 경우
           toast({
-            title: "측정 불가",
-            description:
-              data.error ||
-              "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+            title: "접근 불가",
+            description: data.error || "CPU 온도를 측정할 수 없습니다.",
             variant: "destructive",
           });
-          router.push("/");
           return;
         }
         throw new Error(data.error || "질문을 불러올 수 없습니다.");
@@ -189,16 +233,30 @@ export default function MeasurePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 403 && data.isHotDeveloper) {
-          toast({
-            title: "측정 불가",
-            description:
-              data.error ||
-              "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
-            variant: "destructive",
-          });
-          router.push("/");
-          return;
+        if (response.status === 403) {
+          if (data.isHotDeveloper) {
+            toast({
+              title: "측정 불가",
+              description:
+                data.error ||
+                "Hot Developer는 당일 CPU 온도를 측정할 수 없습니다.",
+              variant: "destructive",
+            });
+            router.push("/");
+            return;
+          }
+          if (data.requiresAcceptance) {
+            const errorMessage = data.error || "답변을 채택해야 CPU 온도를 측정할 수 있습니다.";
+            toast({
+              title: "답변 채택 필요",
+              description: errorMessage,
+              variant: "destructive",
+            });
+            // alert로 사용자에게 명확히 알리고 확인 후 이동
+            alert(errorMessage);
+            router.push("/questions");
+            return;
+          }
         }
         throw new Error(data.error || "답변 제출 중 오류가 발생했습니다.");
       }
