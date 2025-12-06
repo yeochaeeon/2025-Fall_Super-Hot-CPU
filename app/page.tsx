@@ -427,7 +427,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Laugh className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold">인기 밈</h2>
+              <h2 className="text-2xl font-bold">TOP3 인기 밈</h2>
             </div>
             <Link href="/memes">
               <Button

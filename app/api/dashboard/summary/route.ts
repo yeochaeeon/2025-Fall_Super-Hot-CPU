@@ -91,11 +91,12 @@ export async function GET() {
         },
       }),
 
-      // 3. 최근 밈 3개
+      // 3. 인기 밈 3개 (좋아요 순)
       prisma.meme.findMany({
-        orderBy: {
-          created_at: "desc",
-        },
+        orderBy: [
+          { like_count: "desc" }, // 좋아요 많은 순
+          { created_at: "desc" }, // 좋아요가 같으면 최근 등록 순
+        ],
         take: 3,
         select: {
           meme_id: true,
