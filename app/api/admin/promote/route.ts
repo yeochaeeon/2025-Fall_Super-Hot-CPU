@@ -448,6 +448,24 @@ export async function POST(request: Request) {
       console.log(`🗑️ Deleted ${deletedBadgesCount.count} expired badges from ${yesterdayDateOnly.toISOString().split("T")[0]}`);
     }
 
+    // 6. 어제의 Hot Developer 질문 초기화 (매일 갱신을 위해)
+    // 모든 SPECIAL 카테고리의 질문을 비활성화하고 dev_group_id를 null로 변경
+    // 새로운 Hot Developer가 오늘 질문을 설정할 수 있도록
+    const resetQuestionsResult = await prisma.question.updateMany({
+      where: {
+        category: "SPECIAL",
+        is_active: true,
+      },
+      data: {
+        is_active: false,
+        dev_group_id: null, // 모든 직군의 질문을 초기화
+      },
+    });
+
+    if (resetQuestionsResult.count > 0) {
+      console.log(`🔄 Reset ${resetQuestionsResult.count} Hot Developer questions for new day`);
+    }
+
     return NextResponse.json(
       {
         message: "승급 로직 실행 완료",

@@ -32,11 +32,14 @@ export default function MemeNewPage() {
     if (file) {
       // 파일 크기 검증 (5MB)
       if (file.size > 5 * 1024 * 1024) {
+        alert("이미지 용량이 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.");
         toast({
           title: "오류",
           description: "이미지 크기는 5MB 이하여야 합니다.",
           variant: "destructive",
         });
+        // 파일 입력 초기화
+        e.target.value = "";
         return;
       }
 
@@ -75,19 +78,76 @@ export default function MemeNewPage() {
         const uploadFormData = new FormData();
         uploadFormData.append("file", imageFile);
 
-        const uploadResponse = await fetch("/api/memes/upload", {
-          method: "POST",
-          body: uploadFormData,
-        });
+        try {
+          const uploadResponse = await fetch("/api/memes/upload", {
+            method: "POST",
+            body: uploadFormData,
+          });
 
-        const uploadData = await uploadResponse.json();
+          let uploadData: any = {};
+          try {
+            const responseText = await uploadResponse.text();
+            if (responseText) {
+              uploadData = JSON.parse(responseText);
+            }
+          } catch (parseError) {
+            // JSON 파싱 실패 시
+            console.error("Upload response parse error:", parseError);
+            console.error("Response status:", uploadResponse.status);
+          }
 
-        if (uploadResponse.ok) {
+          if (!uploadResponse.ok) {
+            console.error("Upload error:", {
+              status: uploadResponse.status,
+              statusText: uploadResponse.statusText,
+              data: uploadData,
+            });
+            
+            const errorMessage = uploadData?.error || `이미지 업로드에 실패했습니다. (${uploadResponse.status})`;
+            
+            // 파일 크기 관련 에러인 경우 alert 표시
+            if (uploadResponse.status === 413 || 
+                uploadResponse.status === 400 || 
+                uploadResponse.status === 500) {
+              // 에러 메시지에 크기 관련 키워드가 있거나, 413 에러인 경우
+              if (uploadResponse.status === 413 || 
+                  errorMessage.includes("크기") || 
+                  errorMessage.includes("size") || 
+                  errorMessage.includes("exceeded") ||
+                  errorMessage.includes("maximum")) {
+                alert("이미지 용량이 너무 큽니다. 5MB 이하의 이미지를 업로드해주세요.");
+              } else if (uploadResponse.status === 500) {
+                // 500 에러인 경우 일반적인 에러 메시지
+                alert("이미지 업로드 중 오류가 발생했습니다. 파일 크기와 형식을 확인해주세요.");
+              }
+            }
+            
+            toast({
+              title: "이미지 업로드 실패",
+              description: errorMessage,
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+
+          if (!uploadData?.url) {
+            console.error("Upload response missing URL:", uploadData);
+            toast({
+              title: "이미지 업로드 실패",
+              description: "업로드된 이미지 URL을 받을 수 없습니다.",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+
           imageUrl = uploadData.url;
-        } else {
+        } catch (uploadError: any) {
+          console.error("Upload request error:", uploadError);
           toast({
-            title: "오류",
-            description: uploadData.error || "이미지 업로드에 실패했습니다.",
+            title: "이미지 업로드 실패",
+            description: uploadError?.message || "이미지 업로드 중 네트워크 오류가 발생했습니다.",
             variant: "destructive",
           });
           setIsSubmitting(false);

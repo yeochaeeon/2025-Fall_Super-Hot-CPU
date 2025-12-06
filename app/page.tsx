@@ -15,6 +15,7 @@ import {
   Heart,
   RotateCw,
   Loader2,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -228,15 +229,28 @@ export default function HomePage() {
                       size="lg"
                     />
                   </div>
-                  <Link href="/measure">
-                    <Button
-                      variant="outline"
-                      className="mt-4 px-6 py-4 text-base font-medium border-2 border-primary/30 bg-background/50 backdrop-blur hover:border-primary/60 hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-[1.02]"
-                    >
-                      <RotateCw className="h-4 w-4 mr-2" />
-                      오늘의 CPU 온도 재측정하기
-                    </Button>
-                  </Link>
+                  <div className="w-full max-w-md space-y-3">
+                    <Link href="/measure" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full px-6 py-4 text-base font-medium border-2 border-primary/30 bg-background/50 backdrop-blur hover:border-primary/60 hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-[1.02]"
+                      >
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        오늘의 CPU 온도 재측정하기
+                      </Button>
+                    </Link>
+                    {userRole === "Root" && (
+                      <Link href="/admin/questions/weight" className="block">
+                        <Button
+                          variant="outline"
+                          className="w-full border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-400"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Root: 질문 가중치 설정하기
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
@@ -246,15 +260,28 @@ export default function HomePage() {
                     </p>
                     <CPUGauge temperature={0} size="lg" />
                   </div>
-                  <Link href="/measure">
-                    <Button className="group relative mt-4 px-8 py-6 text-lg font-semibold bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] text-black border-2 border-primary/50 shadow-neon hover:shadow-cpu transition-all duration-300 hover:scale-105 hover:-translate-y-1 overflow-hidden">
-                      <span className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      <span className="relative flex items-center gap-2">
-                        <Flame className="h-5 w-5 group-hover:animate-pulse" />
-                        오늘의 CPU 온도 측정하기
-                      </span>
-                    </Button>
-                  </Link>
+                  <div className="w-full max-w-md space-y-3">
+                    <Link href="/measure" className="block">
+                      <Button className="group relative w-full px-8 py-6 text-lg font-semibold bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] text-black border-2 border-primary/50 shadow-neon hover:shadow-cpu transition-all duration-300 hover:scale-105 hover:-translate-y-1 overflow-hidden">
+                        <span className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <span className="relative flex items-center gap-2">
+                          <Flame className="h-5 w-5 group-hover:animate-pulse" />
+                          오늘의 CPU 온도 측정하기
+                        </span>
+                      </Button>
+                    </Link>
+                    {userRole === "Root" && (
+                      <Link href="/admin/questions/weight" className="block">
+                        <Button
+                          variant="outline"
+                          className="w-full border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-400"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Root: 질문 가중치 설정하기
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </>
               )}
             </div>
