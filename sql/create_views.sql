@@ -125,5 +125,5 @@ GROUP BY c.concern_id, c.user_id, c.dev_group_id, c.title, c.content,
          c.created_at, c.was_good, u.nickname, dg.name, r.name
 ORDER BY c.created_at DESC;
 
-SELECT '✅ VIEW 생성 완료!' as message;
+SELECT 'VIEW 생성 완료!' as message;
 

@@ -86,6 +86,14 @@
 - **FOREIGN KEY**: 테이블 간 참조 무결성 보장
 - **PRIMARY KEY**: 기본키 설정 (단일/복합)
 - **INDEX**: 조회 성능 최적화
+  - `daily_answer(answer_date)`: 날짜별 답변 조회 (`/api/rankings/today`, `/api/measure/submit`, `/api/dashboard/summary`)
+  - `daily_answer(user_id, answer_date)`: 사용자별 일일 답변 조회
+  - `daily_answer(question_id, answer_date)`: 질문별 일일 답변 집계
+  - `daily_score(score_date, cpu_score DESC)`: 랭킹 조회 최적화 (`/api/rankings/today`, `/api/admin/promote`)
+  - `user_badge(granted_date)`: 날짜별 배지 조회 및 삭제 (`/api/rankings/today`, `/api/admin/promote`)
+  - `question(category, dev_group_id)`: 카테고리+직군별 질문 조회 (`/api/measure/questions`)
+  - `meme(created_at DESC)`: 최신 밈 조회 (`/api/memes`)
+  - `concern(created_at DESC)`: 최신 고민 조회 (`/api/questions`)
 - **ENUM**: 질문 카테고리 타입 정의
 - **DEFAULT**: 기본값 설정
 
