@@ -87,58 +87,61 @@ export async function PATCH(
     const body = await request.json();
     const { accept } = body; // true or false
 
-    // 기존에 채택된 답변이 있으면 모두 취소
-    await prisma.concern_answer.updateMany({
-      where: {
-        concern_id: concernId,
-        is_accepted: true,
-      },
-      data: {
-        is_accepted: false,
-      },
-    });
-
-    // 선택한 답변 채택/취소
-    if (accept) {
-      await prisma.concern_answer.update({
-        where: { concern_answer_id: answerId },
-        data: { is_accepted: true },
-      });
-
-      // 고민의 was_good도 업데이트 (채택 시 true)
-      await prisma.concern.update({
-        where: { concern_id: concernId },
-        data: { was_good: true },
-      });
-
-      // 답변 작성자의 total_accepted 증가
-      await prisma.users.update({
-        where: { user_id: answer.user_id },
+    // 트랜잭션으로 모든 작업을 원자적으로 처리
+    await prisma.$transaction(async (tx) => {
+      // 기존에 채택된 답변이 있으면 모두 취소
+      await tx.concern_answer.updateMany({
+        where: {
+          concern_id: concernId,
+          is_accepted: true,
+        },
         data: {
-          total_accepted: {
-            increment: 1,
-          },
+          is_accepted: false,
         },
       });
-    } else {
-      // 채택 취소 시 was_good을 null로
-      await prisma.concern.update({
-        where: { concern_id: concernId },
-        data: { was_good: null },
-      });
 
-      // 답변 작성자의 total_accepted 감소 (이전에 채택되었던 경우만)
-      if (answer.is_accepted) {
-        await prisma.users.update({
+      // 선택한 답변 채택/취소
+      if (accept) {
+        await tx.concern_answer.update({
+          where: { concern_answer_id: answerId },
+          data: { is_accepted: true },
+        });
+
+        // 고민의 was_good도 업데이트 (채택 시 true)
+        await tx.concern.update({
+          where: { concern_id: concernId },
+          data: { was_good: true },
+        });
+
+        // 답변 작성자의 total_accepted 증가
+        await tx.users.update({
           where: { user_id: answer.user_id },
           data: {
             total_accepted: {
-              decrement: 1,
+              increment: 1,
             },
           },
         });
+      } else {
+        // 채택 취소 시 was_good을 null로
+        await tx.concern.update({
+          where: { concern_id: concernId },
+          data: { was_good: null },
+        });
+
+        // 답변 작성자의 total_accepted 감소 (이전에 채택되었던 경우만)
+        if (answer.is_accepted) {
+          await tx.users.update({
+            where: { user_id: answer.user_id },
+            data: {
+              total_accepted: {
+                decrement: 1,
+              },
+            },
+          });
+        }
       }
-    }
+    });
 
     return NextResponse.json(
       {

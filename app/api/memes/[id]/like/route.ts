@@ -95,44 +95,47 @@ export async function POST(
     let newLikeCount: number;
 
     if (existingLike) {
-      // 좋아요 취소
-      await prisma.meme_like.deleteMany({
-        where: {
-          meme_id: memeId,
-          user_id: userIdInt,
-        },
-      });
-
-      // like_count 감소
-      newLikeCount = Math.max(0, meme.like_count - 1);
-      await prisma.meme.update({
-        where: { meme_id: memeId },
-        data: { like_count: newLikeCount },
-      });
-
-      // user_daily_like에서 좋아요 수 감소
-      const dailyLike = await prisma.user_daily_like.findUnique({
-        where: {
-          user_id_like_date: {
+      // 트랜잭션으로 좋아요 취소 작업을 원자적으로 처리
+      await prisma.$transaction(async (tx) => {
+        // 좋아요 취소
+        await tx.meme_like.deleteMany({
+          where: {
+            meme_id: memeId,
             user_id: userIdInt,
-            like_date: today,
           },
-        },
-      });
+        });
 
-      if (dailyLike) {
-        await prisma.user_daily_like.update({
+        // like_count 감소
+        newLikeCount = Math.max(0, meme.like_count - 1);
+        await tx.meme.update({
+          where: { meme_id: memeId },
+          data: { like_count: newLikeCount },
+        });
+
+        // user_daily_like에서 좋아요 수 감소
+        const dailyLike = await tx.user_daily_like.findUnique({
           where: {
             user_id_like_date: {
               user_id: userIdInt,
               like_date: today,
             },
           },
-          data: {
-            like_count: Math.max(0, dailyLike.like_count - 1),
-          },
         });
-      }
+
+        if (dailyLike) {
+          await tx.user_daily_like.update({
+            where: {
+              user_id_like_date: {
+                user_id: userIdInt,
+                like_date: today,
+              },
+            },
+            data: {
+              like_count: Math.max(0, dailyLike.like_count - 1),
+            },
+          });
+        }
+      });
 
       isLiked = false;
     } else {
@@ -168,39 +171,42 @@ export async function POST(
         );
       }
 
-      // 좋아요 추가
-      await prisma.meme_like.create({
-        data: {
-          meme_id: memeId,
-          user_id: userIdInt,
-        },
-      });
+      // 트랜잭션으로 좋아요 추가 작업을 원자적으로 처리
+      await prisma.$transaction(async (tx) => {
+        // 좋아요 추가
+        await tx.meme_like.create({
+          data: {
+            meme_id: memeId,
+            user_id: userIdInt,
+          },
+        });
 
-      // like_count 증가
-      newLikeCount = meme.like_count + 1;
-      await prisma.meme.update({
-        where: { meme_id: memeId },
-        data: { like_count: newLikeCount },
-      });
+        // like_count 증가
+        newLikeCount = meme.like_count + 1;
+        await tx.meme.update({
+          where: { meme_id: memeId },
+          data: { like_count: newLikeCount },
+        });
 
-      // user_daily_like는 참고용으로만 업데이트 (실제 제한은 meme_like 테이블 기준)
-      await prisma.user_daily_like.upsert({
-        where: {
-          user_id_like_date: {
+        // user_daily_like는 참고용으로만 업데이트 (실제 제한은 meme_like 테이블 기준)
+        await tx.user_daily_like.upsert({
+          where: {
+            user_id_like_date: {
+              user_id: userIdInt,
+              like_date: today,
+            },
+          },
+          update: {
+            like_count: {
+              increment: 1,
+            },
+          },
+          create: {
             user_id: userIdInt,
             like_date: today,
+            like_count: currentLikeCount + 1,
           },
-        },
-        update: {
-          like_count: {
-            increment: 1,
-          },
-        },
-        create: {
-          user_id: userIdInt,
-          like_date: today,
-          like_count: currentLikeCount + 1,
-        },
+        });
       });
 
       isLiked = true;

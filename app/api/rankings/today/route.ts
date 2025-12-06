@@ -16,64 +16,82 @@ export async function GET(request: NextRequest) {
       kstNow.getUTCDate()
     ));
 
-    // 오늘의 랭킹 조회
-    let whereClause: any = {
-      score_date: today,
-    };
-
+    // VIEW를 사용하여 오늘의 랭킹 조회
+    let viewQuery = `
+      SELECT * FROM today_ranking_view
+    `;
+    
     if (devGroup && devGroup !== "all") {
-      whereClause.user = {
-        dev_group_id: parseInt(devGroup),
-      };
+      viewQuery += ` WHERE dev_group_id = ${parseInt(devGroup)}`;
     }
+    
+    viewQuery += ` LIMIT 20`;
 
-    const rankings = await prisma.daily_score.findMany({
-      where: whereClause,
+    const viewRankings = await prisma.$queryRawUnsafe<Array<{
+      user_id: number;
+      score_date: Date;
+      cpu_score: number;
+      nickname: string;
+      role_id: number;
+      dev_group_id: number;
+      dev_group_name: string;
+      role_name: string;
+    }>>(viewQuery);
+
+    // 추가 정보 조회 (뱃지, 공통 답변)
+    const userIds = viewRankings.map(r => r.user_id);
+    const users = await prisma.users.findMany({
+      where: {
+        user_id: { in: userIds },
+      },
       include: {
-        user: {
-          include: {
-            dev_group: true,
-            // 오늘 획득한 뱃지 (Hot Developer 뱃지 제외)
-            user_badge: {
-              where: {
-                granted_date: today,
-                badge: {
-                  question: {
-                    category: {
-                      not: "SPECIAL", // Hot Developer 질문 뱃지 제외
-                    },
-                  },
+        dev_group: true,
+        // 오늘 획득한 뱃지 (Hot Developer 뱃지 제외)
+        user_badge: {
+          where: {
+            granted_date: today,
+            badge: {
+              question: {
+                category: {
+                  not: "SPECIAL", // Hot Developer 질문 뱃지 제외
                 },
               },
-              include: {
-                badge: {
-                  include: {
-                    question: true,
-                  },
-                },
-              },
-              take: 5,
             },
-            // 오늘의 공통 질문 답변들
-            daily_answer: {
-              where: {
-                answer_date: today,
-                question: {
-                  category: "COMMON",
-                },
-              },
+          },
+          include: {
+            badge: {
               include: {
                 question: true,
               },
             },
           },
+          take: 5,
+        },
+        // 오늘의 공통 질문 답변들
+        daily_answer: {
+          where: {
+            answer_date: today,
+            question: {
+              category: "COMMON",
+            },
+          },
+          include: {
+            question: true,
+          },
         },
       },
-      orderBy: {
-        cpu_score: "desc",
-      },
-      take: 20, // 상위 20명
     });
+
+    const userMap = new Map(users.map(u => [u.user_id, u]));
+    
+    // VIEW 결과와 추가 정보 결합
+    const rankings = viewRankings.map(viewRanking => {
+      const user = userMap.get(viewRanking.user_id);
+      return {
+        ...viewRanking,
+        user: user || null,
+      };
+    }).filter(r => r.user !== null);
 
     const formattedRankings = rankings.map((ranking, index) => {
       const user = ranking.user;

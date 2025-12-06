@@ -6,38 +6,30 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const devGroup = searchParams.get("devGroup"); // "all", "1", "2", "3", "4"
 
-    // 누적 랭킹: 모든 날짜의 평균 CPU 점수 계산
-    // 각 사용자의 모든 daily_score 레코드의 cpu_score 평균값을 계산
-    // 예: 사용자가 3일 동안 측정했다면 (점수1 + 점수2 + 점수3) / 3
-    let whereClause: any = {};
-
+    // VIEW를 사용하여 누적 랭킹 조회
+    let viewQuery = `
+      SELECT * FROM total_ranking_view
+    `;
+    
     if (devGroup && devGroup !== "all") {
-      whereClause.user = {
-        dev_group_id: parseInt(devGroup),
-      };
+      viewQuery += ` WHERE dev_group_id = ${parseInt(devGroup)}`;
     }
+    
+    viewQuery += ` LIMIT 20`;
 
-    // 사용자별 평균 CPU 점수 계산 (모든 날짜의 평균)
-    const userScores = await prisma.daily_score.groupBy({
-      by: ["user_id"],
-      where: whereClause,
-      _avg: {
-        cpu_score: true, // 모든 날짜의 cpu_score 평균
-      },
-      _count: {
-        cpu_score: true, // 측정한 날짜 수
-      },
-    });
+    const viewRankings = await prisma.$queryRawUnsafe<Array<{
+      user_id: number;
+      nickname: string;
+      role_id: number;
+      dev_group_id: number;
+      dev_group_name: string;
+      role_name: string;
+      avg_cpu_score: number;
+      measurement_count: number;
+    }>>(viewQuery);
 
     // 상위 20명의 user_id 추출
-    const topUserIds = userScores
-      .sort((a, b) => {
-        const avgA = a._avg.cpu_score ? Number(a._avg.cpu_score) : 0;
-        const avgB = b._avg.cpu_score ? Number(b._avg.cpu_score) : 0;
-        return avgB - avgA;
-      })
-      .slice(0, 20)
-      .map(score => score.user_id);
+    const topUserIds = viewRankings.map(r => r.user_id);
 
     // 모든 사용자 정보를 한 번에 조회 (N+1 문제 해결)
     const users = await prisma.users.findMany({
@@ -86,14 +78,11 @@ export async function GET(request: NextRequest) {
     // user_id로 매핑
     const userMap = new Map(users.map(u => [u.user_id, u]));
 
-    // 사용자 정보와 함께 조회
-    const rankings = topUserIds
-      .map((userId) => {
-        const user = userMap.get(userId);
+    // VIEW 결과와 사용자 정보 결합
+    const rankings = viewRankings
+      .map((viewRanking) => {
+        const user = userMap.get(viewRanking.user_id);
         if (!user) return null;
-
-        const score = userScores.find(s => s.user_id === userId);
-        if (!score) return null;
 
           // 공통 질문 답변들의 평균 계산
           const answerMap = new Map<string, number[]>();
@@ -138,9 +127,7 @@ export async function GET(request: NextRequest) {
           user_id: user.user_id,
           username: user.nickname,
           role: roleNameMap[user.dev_group.name] || user.dev_group.name,
-          temperature: score._avg.cpu_score
-            ? Math.round(Number(score._avg.cpu_score) * 10) / 10 // 소수점 첫째자리까지
-            : 0,
+          temperature: Math.round(Number(viewRanking.avg_cpu_score) * 10) / 10, // 소수점 첫째자리까지
           badges: user.user_badge
             .filter((ub) => ub.badge.question.category !== "SPECIAL") // Hot Developer 뱃지 제외
             .map((ub) => {

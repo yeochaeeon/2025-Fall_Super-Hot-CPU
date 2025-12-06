@@ -25,177 +25,95 @@ export async function GET() {
       recentMemes,
       recentQuestions,
     ] = await Promise.all([
-      // 1. 오늘 날짜에서 가장 높은 온도를 가진 사용자
-      prisma.daily_score.findFirst({
-        where: {
-          score_date: today,
-        },
-        include: {
-          user: {
-            include: {
-              dev_group: true,
-              role: true,
-              // 오늘 획득한 뱃지 (Hot Developer 뱃지 제외)
-              user_badge: {
-                where: {
-                  granted_date: today,
-                  badge: {
-                    question: {
-                      category: {
-                        not: "SPECIAL", // Hot Developer 질문 뱃지 제외
-                      },
-                    },
-                  },
-                },
-                include: {
-                  badge: {
-                    include: {
-                      question: true,
-                    },
-                  },
-                },
-                take: 5,
-              },
-              // 오늘의 공통 질문 답변
-              daily_answer: {
-                where: {
-                  answer_date: today,
-                  question: {
-                    category: "COMMON",
-                  },
-                },
-                include: {
-                  question: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          cpu_score: "desc",
-        },
-      }),
+      // 1. VIEW를 사용하여 오늘의 Hot CPU 사용자 조회
+      prisma.$queryRawUnsafe<Array<{
+        user_id: number;
+        score_date: Date;
+        cpu_score: number;
+        nickname: string;
+        role_id: number;
+        dev_group_id: number;
+        dev_group_name: string;
+        role_name: string;
+      }>>(`SELECT * FROM today_hot_cpu_view LIMIT 1`),
 
-      // 2. 오늘 날짜에서 직군별 평균 온도 계산
-      prisma.daily_score.findMany({
-        where: {
-          score_date: today,
-        },
-        select: {
-          cpu_score: true,
-          user: {
-            select: {
-              dev_group_id: true,
-            },
-          },
-        },
-      }),
+      // 2. VIEW를 사용하여 직군별 오늘의 평균 온도 조회
+      prisma.$queryRawUnsafe<Array<{
+        dev_group_id: number;
+        dev_group_name: string;
+        avg_cpu_score: number;
+        user_count: number;
+      }>>(`SELECT * FROM dev_group_today_avg_view`),
 
-      // 3. 인기 밈 3개 (좋아요 순)
-      prisma.meme.findMany({
-        orderBy: [
-          { like_count: "desc" }, // 좋아요 많은 순
-          { created_at: "desc" }, // 좋아요가 같으면 최근 등록 순
-        ],
-        take: 3,
-        select: {
-          meme_id: true,
-          title: true,
-          content_text: true,
-          image_url: true,
-          like_count: true,
-          user: {
-            select: {
-              nickname: true,
-            },
-          },
-        },
-      }),
+      // 3. VIEW를 사용하여 인기 밈 3개 조회
+      prisma.$queryRawUnsafe<Array<{
+        meme_id: number;
+        user_id: number;
+        title: string;
+        content_text: string;
+        image_url: string;
+        created_at: Date;
+        like_count: number;
+        author_nickname: string;
+        dev_group_name: string;
+        role_name: string;
+      }>>(`SELECT * FROM popular_memes_view LIMIT 3`),
 
-      // 4. 최근 고민 3개
-      prisma.concern.findMany({
-        orderBy: {
-          created_at: "desc",
-        },
-        take: 3,
-        select: {
-          concern_id: true,
-          title: true,
-          user: {
-            select: {
-              nickname: true,
-              dev_group: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-          answer: {
-            select: {
-              concern_answer_id: true,
-            },
-          },
-        },
-      }),
+      // 4. VIEW를 사용하여 최근 고민 3개 조회
+      prisma.$queryRawUnsafe<Array<{
+        concern_id: number;
+        user_id: number;
+        dev_group_id: number;
+        title: string;
+        content: string;
+        created_at: Date;
+        was_good: boolean | null;
+        author_nickname: string;
+        dev_group_name: string;
+        role_name: string;
+        answer_count: number;
+      }>>(`SELECT * FROM recent_concerns_view LIMIT 3`),
     ]);
 
-    // 직군별 평균 온도 계산
-    const roleAverages: Record<number, { sum: number; count: number }> = {};
-    
-    for (const score of todayScores) {
-      const devGroupId = score.user.dev_group_id;
-      if (!roleAverages[devGroupId]) {
-        roleAverages[devGroupId] = { sum: 0, count: 0 };
-      }
-      roleAverages[devGroupId].sum += Number(score.cpu_score);
-      roleAverages[devGroupId].count += 1;
-    }
+    // VIEW 결과 처리
+    const topUserView = Array.isArray(topUserScore) ? topUserScore[0] : null;
+    const devGroupAvgs = Array.isArray(todayScores) ? todayScores : [];
+    const memesView = Array.isArray(recentMemes) ? recentMemes : [];
+    const concernsView = Array.isArray(recentQuestions) ? recentQuestions : [];
 
-    // 모든 직군 정보와 오늘의 공통 질문 답변을 병렬로 조회
-    const devGroupIds = Object.keys(roleAverages).map(Number);
-    
-    const [devGroups, allTodayAnswers] = await Promise.all([
-      // 모든 직군 정보를 한 번에 조회 (N+1 문제 해결)
-      prisma.dev_group.findMany({
-        where: {
-          dev_group_id: { in: devGroupIds },
-        },
-        select: {
-          dev_group_id: true,
-          name: true,
-        },
-      }),
-      // 모든 오늘의 공통 질문 답변을 한 번에 조회 (N+1 문제 해결)
-      devGroupIds.length > 0
-        ? prisma.daily_answer.findMany({
-            where: {
-              answer_date: today,
-              question: {
-                category: "COMMON",
-              },
-              user: {
-                dev_group_id: { in: devGroupIds },
+    // 직군별 평균 온도는 VIEW에서 이미 계산됨
+    const topRole = devGroupAvgs.length > 0 
+      ? devGroupAvgs.sort((a, b) => Number(b.avg_cpu_score) - Number(a.avg_cpu_score))[0]
+      : null;
+
+    // 공통 질문 답변 평균 계산 (직군별)
+    const devGroupIds = devGroupAvgs.map(dg => dg.dev_group_id);
+    const allTodayAnswers = devGroupIds.length > 0
+      ? await prisma.daily_answer.findMany({
+          where: {
+            answer_date: today,
+            question: {
+              category: "COMMON",
+            },
+            user: {
+              dev_group_id: { in: devGroupIds },
+            },
+          },
+          select: {
+            answer_value: true,
+            user: {
+              select: {
+                dev_group_id: true,
               },
             },
-            select: {
-              answer_value: true,
-              user: {
-                select: {
-                  dev_group_id: true,
-                },
-              },
-              question: {
-                select: {
-                  content: true,
-                },
+            question: {
+              select: {
+                content: true,
               },
             },
-          })
-        : Promise.resolve([]),
-    ]);
-    
-    const devGroupMap = new Map(devGroups.map(dg => [dg.dev_group_id, dg]));
+          },
+        })
+      : [];
 
     // 직군별로 답변 그룹핑
     type AnswerType = {
@@ -212,13 +130,10 @@ export async function GET() {
       answersByDevGroup[devGroupId].push(answer);
     }
 
-    // 직군별 평균 온도 및 공통 질문 평균 계산
-    const roleStats = devGroupIds.map((devGroupId) => {
-      const stats = roleAverages[devGroupId];
-      const devGroup = devGroupMap.get(devGroupId);
-      const todayAnswers = answersByDevGroup[devGroupId] || [];
-
-      // 공통 질문별 평균 계산
+    // 직군별 공통 질문 평균 계산
+    const roleStats = devGroupAvgs.map((devGroupAvg) => {
+      const todayAnswers = answersByDevGroup[devGroupAvg.dev_group_id] || [];
+      
       const answerMap = new Map<string, number[]>();
       todayAnswers.forEach((answer) => {
         const questionContent = answer.question.content;
@@ -249,14 +164,14 @@ export async function GET() {
       });
 
       return {
-        devGroupId,
-        name: devGroup?.name || "",
-        avgTemp: stats.count > 0 ? Math.round((stats.sum / stats.count) * 10) / 10 : 0, // 소수점 첫째자리까지
+        devGroupId: devGroupAvg.dev_group_id,
+        name: devGroupAvg.dev_group_name,
+        avgTemp: Math.round(Number(devGroupAvg.avg_cpu_score) * 10) / 10,
         commonAnswers,
       };
     });
 
-    const topRole = roleStats.sort((a, b) => b.avgTemp - a.avgTemp)[0] || null;
+    const topRoleFormatted = topRole ? roleStats.find(r => r.devGroupId === topRole.dev_group_id) : null;
 
     // 직군 이름 매핑
     const roleNameMap: Record<string, string> = {
@@ -266,91 +181,128 @@ export async function GET() {
       모바일: "Mobile",
     };
 
-    // 오늘의 Hot Developer 포맷팅
+    // 오늘의 Hot Developer 포맷팅 (VIEW 결과 사용)
     let formattedTopUser = null;
-    if (topUserScore) {
-      const user = topUserScore.user;
-      const commonAnswers = user.daily_answer.reduce(
-        (acc, answer) => {
-          const questionContent = answer.question.content;
-          if (questionContent === "커밋 수") {
-            acc.commits = Number(answer.answer_value);
-          } else if (questionContent === "마신 커피 몇잔인지") {
-            acc.coffee = Number(answer.answer_value);
-          } else if (questionContent === "수면시간") {
-            acc.sleep = Number(answer.answer_value);
-          } else if (questionContent === "개발 시간") {
-            acc.devTime = Number(answer.answer_value);
-          }
-          return acc;
+    if (topUserView) {
+      // 추가 정보 조회 (뱃지, 공통 답변)
+      const user = await prisma.users.findUnique({
+        where: { user_id: topUserView.user_id },
+        include: {
+          dev_group: true,
+          role: true,
+          user_badge: {
+            where: {
+              granted_date: today,
+              badge: {
+                question: {
+                  category: {
+                    not: "SPECIAL",
+                  },
+                },
+              },
+            },
+            include: {
+              badge: {
+                include: {
+                  question: true,
+                },
+              },
+            },
+            take: 5,
+          },
+          daily_answer: {
+            where: {
+              answer_date: today,
+              question: {
+                category: "COMMON",
+              },
+            },
+            include: {
+              question: true,
+            },
+          },
         },
-        {
-          commits: 0,
-          coffee: 0,
-          sleep: 0,
-          devTime: 0,
-        } as { commits: number; coffee: number; sleep: number; devTime: number }
-      );
-
-      // 뱃지 이모티콘 추출
-      const badges = user.user_badge
-        .filter((ub) => ub.badge.question.category !== "SPECIAL") // Hot Developer 뱃지 제외
-        .map((ub) => {
-        let icon = "🏆";
-        if (ub.badge.description && ub.badge.description.trim().length > 0) {
-          const desc = ub.badge.description.trim();
-          // description이 "🤖 커밋 머신" 형식이므로 첫 이모티콘만 추출
-          // codePointAt을 사용하여 서로게이트 페어 처리
-          const firstCodePoint = desc.codePointAt(0);
-          if (firstCodePoint) {
-            // 이모티콘 범위 체크 (기본 이모티콘 + 서로게이트 페어)
-            if (
-              (firstCodePoint >= 0x1f300 && firstCodePoint <= 0x1f9ff) || // Miscellaneous Symbols and Pictographs
-              (firstCodePoint >= 0x2600 && firstCodePoint <= 0x26ff) || // Miscellaneous Symbols
-              (firstCodePoint >= 0x2700 && firstCodePoint <= 0x27bf) || // Dingbats
-              (firstCodePoint >= 0x1f600 && firstCodePoint <= 0x1f64f) || // Emoticons
-              (firstCodePoint >= 0x1f680 && firstCodePoint <= 0x1f6ff) || // Transport and Map Symbols
-              (firstCodePoint >= 0x1f900 && firstCodePoint <= 0x1f9ff) || // Supplemental Symbols and Pictographs
-              (firstCodePoint >= 0x1fa00 && firstCodePoint <= 0x1faff) // Symbols and Pictographs Extended-A
-            ) {
-              // 서로게이트 페어인 경우 2자, 아니면 1자
-              icon = firstCodePoint > 0xffff 
-                ? String.fromCodePoint(firstCodePoint)
-                : desc[0];
-            }
-          }
-        }
-        return {
-          icon,
-          name: ub.badge.name,
-        };
       });
 
-      formattedTopUser = {
-        rank: 1,
-        username: user.nickname,
-        role: roleNameMap[user.dev_group.name] || user.dev_group.name,
-        temperature: Math.round(Number(topUserScore.cpu_score) * 10) / 10, // 소수점 첫째자리까지
-        badges,
-        commonAnswers,
-      };
+      if (user) {
+        const commonAnswers = user.daily_answer.reduce(
+          (acc, answer) => {
+            const questionContent = answer.question.content;
+            if (questionContent === "커밋 수") {
+              acc.commits = Number(answer.answer_value);
+            } else if (questionContent === "마신 커피 몇잔인지") {
+              acc.coffee = Number(answer.answer_value);
+            } else if (questionContent === "수면시간") {
+              acc.sleep = Number(answer.answer_value);
+            } else if (questionContent === "개발 시간") {
+              acc.devTime = Number(answer.answer_value);
+            }
+            return acc;
+          },
+          {
+            commits: 0,
+            coffee: 0,
+            sleep: 0,
+            devTime: 0,
+          } as { commits: number; coffee: number; sleep: number; devTime: number }
+        );
+
+        const badges = user.user_badge
+          .filter((ub) => ub.badge.question.category !== "SPECIAL")
+          .map((ub) => {
+            let icon = "🏆";
+            if (ub.badge.description && ub.badge.description.trim().length > 0) {
+              const desc = ub.badge.description.trim();
+              const firstCodePoint = desc.codePointAt(0);
+              if (firstCodePoint) {
+                if (
+                  (firstCodePoint >= 0x1f300 && firstCodePoint <= 0x1f9ff) ||
+                  (firstCodePoint >= 0x2600 && firstCodePoint <= 0x26ff) ||
+                  (firstCodePoint >= 0x2700 && firstCodePoint <= 0x27bf) ||
+                  (firstCodePoint >= 0x1f600 && firstCodePoint <= 0x1f64f) ||
+                  (firstCodePoint >= 0x1f680 && firstCodePoint <= 0x1f6ff) ||
+                  (firstCodePoint >= 0x1f900 && firstCodePoint <= 0x1f9ff) ||
+                  (firstCodePoint >= 0x1fa00 && firstCodePoint <= 0x1faff)
+                ) {
+                  icon = firstCodePoint > 0xffff 
+                    ? String.fromCodePoint(firstCodePoint)
+                    : desc[0];
+                }
+              }
+            }
+            return {
+              icon,
+              name: ub.badge.name,
+            };
+          });
+
+        formattedTopUser = {
+          rank: 1,
+          username: topUserView.nickname,
+          role: roleNameMap[topUserView.dev_group_name] || topUserView.dev_group_name,
+          temperature: Math.round(Number(topUserView.cpu_score) * 10) / 10,
+          badges,
+          commonAnswers,
+        };
+      }
     }
 
     // 직군 이름 매핑 (한글 -> 영문)
-    const formattedTopRole = topRole
+    const formattedTopRole = topRoleFormatted
       ? {
-          name: roleNameMap[topRole.name] || topRole.name,
-          avgTemp: topRole.avgTemp,
-          commonAnswers: topRole.commonAnswers,
+          name: roleNameMap[topRoleFormatted.name] || topRoleFormatted.name,
+          avgTemp: topRoleFormatted.avgTemp,
+          commonAnswers: topRoleFormatted.commonAnswers,
         }
       : null;
 
     // 현재 사용자가 좋아요한 밈 ID 목록 조회
-    const likedMemeIds = userIdInt
+    const memeIds = memesView.map((m) => m.meme_id);
+    const likedMemeIds = userIdInt && memeIds.length > 0
       ? await prisma.meme_like.findMany({
           where: {
             user_id: userIdInt,
-            meme_id: { in: recentMemes.map((m) => m.meme_id) },
+            meme_id: { in: memeIds },
           },
           select: {
             meme_id: true,
@@ -360,23 +312,23 @@ export async function GET() {
 
     const likedMemeIdSet = new Set(likedMemeIds.map((l) => l.meme_id));
 
-    // 최근 밈 포맷팅
-    const formattedMemes = recentMemes.map((meme) => ({
+    // 최근 밈 포맷팅 (VIEW 결과 사용)
+    const formattedMemes = memesView.map((meme) => ({
       id: meme.meme_id,
-      author: meme.user.nickname,
+      author: meme.author_nickname,
       content: meme.title || meme.content_text || "",
       imageUrl: meme.image_url,
       likes: meme.like_count,
       isLiked: likedMemeIdSet.has(meme.meme_id),
     }));
 
-    // 최근 고민 포맷팅
-    const formattedQuestions = recentQuestions.map((question) => ({
-      id: question.concern_id,
-      author: question.user.nickname,
-      role: roleNameMap[question.user.dev_group.name] || question.user.dev_group.name,
-      title: question.title,
-      answers: question.answer.length,
+    // 최근 고민 포맷팅 (VIEW 결과 사용)
+    const formattedQuestions = concernsView.map((concern) => ({
+      id: concern.concern_id,
+      author: concern.author_nickname,
+      role: roleNameMap[concern.dev_group_name] || concern.dev_group_name,
+      title: concern.title,
+      answers: concern.answer_count,
     }));
 
     return NextResponse.json(
