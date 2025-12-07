@@ -92,7 +92,7 @@ export async function POST(
     });
 
     let isLiked: boolean;
-    let newLikeCount: number;
+    let newLikeCount: number = meme.like_count; // 초기값 설정
 
     if (existingLike) {
       // 트랜잭션으로 좋아요 취소 작업을 원자적으로 처리
