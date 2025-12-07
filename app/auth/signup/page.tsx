@@ -159,9 +159,6 @@ export default function SignupPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold">회원가입</h1>
-            <p className="text-muted-foreground">
-              DevCPU Community에 함께하세요
-            </p>
           </div>
 
           <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">

@@ -38,12 +38,12 @@ export default function LoginPage() {
           description: data.error || "로그인 중 오류가 발생했습니다.",
           variant: "destructive",
         });
-        
+
         // 401 에러 시 alert 표시
         if (response.status === 401) {
           alert("회원 정보를 확인해주세요.");
         }
-        
+
         return;
       }
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
         description: `${data.user.nickname}님, 환영합니다!`,
       });
 
-    router.push("/");
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);
@@ -77,7 +77,6 @@ export default function LoginPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold">로그인</h1>
-            <p className="text-muted-foreground">DevCPU Community에 오신 것을 환영합니다</p>
           </div>
 
           <Card className="p-6 bg-card/50 backdrop-blur border-primary/20 shadow-card">
@@ -128,7 +127,10 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center text-sm">
               <span className="text-muted-foreground">계정이 없으신가요? </span>
-              <Link href="/auth/signup" className="text-primary hover:underline">
+              <Link
+                href="/auth/signup"
+                className="text-primary hover:underline"
+              >
                 회원가입
               </Link>
             </div>
@@ -138,4 +140,3 @@ export default function LoginPage() {
     </Layout>
   );
 }
-
