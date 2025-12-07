@@ -76,8 +76,6 @@ git clone https://github.com/yeochaeeon/2025-Fall_Super-Hot-CPU.git
 # Install dependencies
 npm install
 
-# Run Database Script (MySQL)
-mysql -u root -p < ./database/init.sql
-
 # Start Server
-npm start
+npm run dev
+
