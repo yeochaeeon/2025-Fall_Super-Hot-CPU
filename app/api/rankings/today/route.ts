@@ -91,10 +91,10 @@ export async function GET(request: NextRequest) {
         ...viewRanking,
         user: user || null,
       };
-    }).filter(r => r.user !== null);
+    }).filter((r): r is typeof r & { user: NonNullable<typeof r.user> } => r.user !== null);
 
     const formattedRankings = rankings.map((ranking, index) => {
-      const user = ranking.user;
+      const user = ranking.user; // 이제 user는 null이 아님을 TypeScript가 인식함
       const commonAnswers = user.daily_answer.reduce((acc, answer) => {
         const questionContent = answer.question.content;
         if (questionContent === "커밋 수") {
